@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 const BLUE = "#1b75bb";
@@ -11,6 +11,18 @@ const TEXT = "#1a2533";
 const BG = "#f5f7fa";
 const WHITE = "#ffffff";
 
+// ── HOOK ──
+function useIsMobile() {
+  const [mobile, setMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const fn = () => setMobile(window.innerWidth < 768);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return mobile;
+}
+
+// ── ICONS ──
 const Icons = {
   Home: ({size=24})=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width={size} height={size}><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
   Building: ({size=24})=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width={size} height={size}><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M9 21V9"/></svg>,
@@ -46,11 +58,11 @@ const Icons = {
   Shield: ({size=16})=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width={size} height={size}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
   ChevronRight: ({size=16})=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width={size} height={size}><polyline points="9 18 15 12 9 6"/></svg>,
   ChevronLeft: ({size=16})=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width={size} height={size}><polyline points="15 18 9 12 15 6"/></svg>,
-  TrendingUp: ({size=20})=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width={size} height={size}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
-  Users: ({size=20})=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width={size} height={size}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
+  Menu: ({size=22})=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={size} height={size}><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
+  X: ({size=22})=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={size} height={size}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
   ClipboardList: ({size=20})=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width={size} height={size}><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>,
   DollarSign: ({size=20})=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width={size} height={size}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
-  Settings: ({size=16})=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width={size} height={size}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
+  Users: ({size=20})=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width={size} height={size}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
 };
 
 const SERVICES = [
@@ -65,10 +77,10 @@ const SERVICES = [
 ];
 
 const EXTRAS = [
-  { id:"oven", name:"Clean inside the oven", Icon:Icons.Oven, price:65 },
-  { id:"fridge", name:"Clean inside the fridge", Icon:Icons.Fridge, price:50 },
-  { id:"windows", name:"Interior windows (1hr)", Icon:Icons.Window, price:79 },
-  { id:"cabinets", name:"Clean inside cabinets", Icon:Icons.Cabinet, price:40 },
+  { id:"oven", name:"Oven Cleaning", Icon:Icons.Oven, price:65 },
+  { id:"fridge", name:"Fridge Cleaning", Icon:Icons.Fridge, price:50 },
+  { id:"windows", name:"Interior Windows", Icon:Icons.Window, price:79 },
+  { id:"cabinets", name:"Inside Cabinets", Icon:Icons.Cabinet, price:40 },
   { id:"deepclean", name:"Deep Clean", Icon:Icons.DeepClean, price:159 },
   { id:"balcony", name:"Balcony Cleaning", Icon:Icons.Balcony, price:45 },
   { id:"laundry", name:"Laundry", Icon:Icons.Laundry, price:35 },
@@ -104,6 +116,13 @@ const DEF_BOOKINGS = [
   { id:"YPC1004", clientId:"c2", clientName:"James Lee", clientEmail:"james@example.com", service:"End of Lease", date:"2026-03-15", time:"7:00 AM", address:"88 Hill Rd, Parramatta NSW 2150", total:199.00, status:"Completed", freq:"One Time", extras:["Deep Clean"] },
 ];
 
+const STATUS_CONFIG = {
+  Pending:   { color:"#e67e22", bg:"#fff8f0" },
+  Confirmed: { color:BLUE,      bg:LIGHT_BLUE },
+  Completed: { color:GREEN,     bg:LIGHT_GREEN },
+  Cancelled: { color:"#e74c3c", bg:"#fdecea" },
+};
+
 function calcPrice(svc, beds, baths, freq, extras, couponPct) {
   if (!svc) return { subtotal:0, discAmt:0, couponDisc:0, total:0 };
   const roomAdd = svc.hasRooms ? (beds-1)*20+(baths-1)*15 : 0;
@@ -117,24 +136,17 @@ function calcPrice(svc, beds, baths, freq, extras, couponPct) {
 function uid() { return Math.random().toString(36).slice(2,8); }
 
 const S = {
-  panel: { background:WHITE, borderRadius:16, border:`1px solid ${BORDER}`, padding:"28px 32px", marginBottom:20, boxShadow:"0 2px 12px rgba(27,117,187,0.06)" },
-  secTitle: { fontSize:19, fontWeight:800, color:TEXT, marginBottom:20, paddingBottom:14, borderBottom:`2px solid ${BORDER}` },
-  inp: { width:"100%", border:`1.5px solid ${BORDER}`, borderRadius:9, padding:"11px 14px", fontSize:14, outline:"none", fontFamily:"inherit", color:TEXT, background:WHITE, boxSizing:"border-box" },
-  btn: (bg,col,border) => ({ background:bg, color:col, border:border?`1.5px solid ${border}`:"none", borderRadius:9, padding:"11px 24px", fontSize:13, fontWeight:700, cursor:"pointer" }),
-  sLbl: { fontSize:11, fontWeight:800, color:MUTED, textTransform:"uppercase", letterSpacing:1.2, marginBottom:8, marginTop:18 },
+  panel: (m) => ({ background:WHITE, borderRadius:m?12:16, border:`1px solid ${BORDER}`, padding:m?"16px":"28px 32px", marginBottom:m?12:20, boxShadow:"0 2px 12px rgba(27,117,187,0.06)" }),
+  secTitle: (m) => ({ fontSize:m?15:19, fontWeight:800, color:TEXT, marginBottom:m?14:20, paddingBottom:m?10:14, borderBottom:`2px solid ${BORDER}` }),
+  inp: { width:"100%", border:`1.5px solid ${BORDER}`, borderRadius:9, padding:"12px 14px", fontSize:15, outline:"none", fontFamily:"inherit", color:TEXT, background:WHITE, boxSizing:"border-box" },
+  btn: (bg,col,border) => ({ background:bg, color:col, border:border?`1.5px solid ${border}`:"none", borderRadius:9, padding:"12px 24px", fontSize:14, fontWeight:700, cursor:"pointer" }),
+  sLbl: { fontSize:11, fontWeight:800, color:MUTED, textTransform:"uppercase", letterSpacing:1.2, marginBottom:8, marginTop:16 },
 };
 
-const STATUS_CONFIG = {
-  Pending:   { color:"#e67e22", bg:"#fff8f0" },
-  Confirmed: { color:BLUE,      bg:LIGHT_BLUE },
-  Completed: { color:GREEN,     bg:LIGHT_GREEN },
-  Cancelled: { color:"#e74c3c", bg:"#fdecea" },
-};
-
-function Logo() {
+function Logo({ small }) {
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-      <svg width="46" height="46" viewBox="0 0 88 88" xmlns="http://www.w3.org/2000/svg">
+    <div style={{ display:"flex", alignItems:"center", gap:small?8:12 }}>
+      <svg width={small?36:46} height={small?36:46} viewBox="0 0 88 88" xmlns="http://www.w3.org/2000/svg">
         <defs><linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#2196f3"/><stop offset="100%" stopColor={BLUE}/></linearGradient></defs>
         <circle cx="44" cy="44" r="42" fill="url(#lg)"/>
         <path d="M14 56 Q26 48 38 56 Q50 64 62 56 Q74 48 80 56" stroke="rgba(255,255,255,0.55)" strokeWidth="2.5" fill="none"/>
@@ -142,8 +154,8 @@ function Logo() {
         <text x="14" y="60" fontFamily="Arial Black,sans-serif" fontSize="42" fontWeight="900" fill="#fff">Y</text>
       </svg>
       <div>
-        <div style={{ fontWeight:900, fontSize:21, lineHeight:1.1, color:TEXT }}>Ya<span style={{ color:GREEN }}>hweh</span></div>
-        <div style={{ fontSize:9, color:MUTED, letterSpacing:2.5, textTransform:"uppercase", fontWeight:700 }}>Property Care</div>
+        <div style={{ fontWeight:900, fontSize:small?17:21, lineHeight:1.1, color:TEXT }}>Ya<span style={{ color:GREEN }}>hweh</span></div>
+        {!small && <div style={{ fontSize:9, color:MUTED, letterSpacing:2.5, textTransform:"uppercase", fontWeight:700 }}>Property Care</div>}
       </div>
     </div>
   );
@@ -151,20 +163,40 @@ function Logo() {
 
 function StatusTag({ s }) {
   const cfg = STATUS_CONFIG[s]||{ color:MUTED, bg:"#f5f5f5" };
-  return <span style={{ background:cfg.bg, color:cfg.color, borderRadius:50, padding:"4px 14px", fontSize:11, fontWeight:800, border:`1px solid ${cfg.color}33` }}>{s}</span>;
+  return <span style={{ background:cfg.bg, color:cfg.color, borderRadius:50, padding:"4px 12px", fontSize:11, fontWeight:800, border:`1px solid ${cfg.color}33`, whiteSpace:"nowrap" }}>{s}</span>;
 }
 
 function Avatar({ name, size=36 }) {
   const initials = name ? name.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase() : "?";
   const colors = [BLUE, GREEN, "#9b59b6", "#e67e22", "#e74c3c", "#1abc9c"];
   const color = colors[name ? name.charCodeAt(0) % colors.length : 0];
+  return <div style={{ width:size, height:size, borderRadius:"50%", background:color+"22", border:`2px solid ${color}33`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:size*0.35, color, flexShrink:0 }}>{initials}</div>;
+}
+
+// ── MOBILE BOTTOM NAV ──
+function MobileBottomNav({ user, isAdmin }) {
+  const path = window.location.pathname;
+  const items = [
+    { label:"Book", icon:<Icons.Home size={22}/>, href:"/book" },
+    user ? { label:"My Bookings", icon:<Icons.ClipboardList size={22}/>, href:"/client" } : { label:"Login", icon:<Icons.User size={22}/>, href:"/login" },
+    isAdmin ? { label:"Admin", icon:<Icons.Shield size={22}/>, href:"/admin" } : { label:"Admin", icon:<Icons.Lock size={22}/>, href:"/admin-login" },
+  ];
   return (
-    <div style={{ width:size, height:size, borderRadius:"50%", background:color+"22", border:`2px solid ${color}33`, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:size*0.35, color, flexShrink:0 }}>
-      {initials}
+    <div style={{ position:"fixed", bottom:0, left:0, right:0, background:WHITE, borderTop:`1px solid ${BORDER}`, display:"flex", zIndex:300, boxShadow:"0 -4px 20px rgba(0,0,0,0.08)" }}>
+      {items.map(item=>{
+        const active = path === item.href;
+        return (
+          <div key={item.href} onClick={()=>window.location.href=item.href} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", padding:"10px 0 8px", cursor:"pointer", color:active?BLUE:MUTED, borderTop:`2px solid ${active?BLUE:"transparent"}` }}>
+            {item.icon}
+            <span style={{ fontSize:10, fontWeight:700, marginTop:3 }}>{item.label}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
+// ── SIDEBAR (desktop only) ──
 function Sidebar({ bk, coupon, setCoupon, couponPct, onApply, couponMsg }) {
   const { svc, beds, baths, freq, extras } = bk;
   const { subtotal, discAmt, couponDisc, total } = calcPrice(svc,beds,baths,freq,extras,couponPct);
@@ -200,17 +232,6 @@ function Sidebar({ bk, coupon, setCoupon, couponPct, onApply, couponMsg }) {
           {couponMsg&&<div style={{ fontSize:12, marginTop:6, color:couponMsg.ok?GREEN:"#e74c3c", fontWeight:600 }}>{couponMsg.text}</div>}
         </>}
       </div>
-      <div style={{ borderTop:`1px solid ${BORDER}`, padding:"14px 20px" }}>
-        <div style={{ fontSize:12, fontWeight:700, color:TEXT, marginBottom:8 }}>Frequently Asked Questions</div>
-        {["Do I get the same cleaner every time?","Do you provide equipment & products?","Do I need to be home?"].map(q=>(
-          <div key={q} style={{ fontSize:12, color:MUTED, padding:"6px 0", borderBottom:`1px solid ${BORDER}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>{q}<span style={{ color:BLUE }}><Icons.ChevronRight/></span></div>
-        ))}
-      </div>
-      <div style={{ background:BG, padding:"14px 20px", borderTop:`1px solid ${BORDER}` }}>
-        <div style={{ display:"flex", gap:2, marginBottom:6 }}>{[1,2,3,4,5].map(i=><span key={i} style={{ color:"#f5a623" }}><Icons.Star/></span>)}</div>
-        <p style={{ fontSize:12, color:TEXT, lineHeight:1.5, fontStyle:"italic", marginBottom:6 }}>"Absolutely spotless every time!"</p>
-        <p style={{ fontSize:11, color:MUTED, fontWeight:700 }}>— Sarah M., Blacktown NSW</p>
-      </div>
       <div style={{ padding:"12px 20px", display:"flex", alignItems:"center", gap:6, fontSize:13, color:MUTED, borderTop:`1px solid ${BORDER}` }}>
         <span style={{ color:GREEN }}><Icons.Phone/></span>
         <a href="tel:1300925355" style={{ color:GREEN, fontWeight:800, textDecoration:"none" }}>1300 925 355</a>
@@ -219,7 +240,27 @@ function Sidebar({ bk, coupon, setCoupon, couponPct, onApply, couponMsg }) {
   );
 }
 
+// ── MOBILE PRICE STRIP ──
+function MobilePriceStrip({ total, step, onNext, onBack, label }) {
+  return (
+    <div style={{ position:"fixed", bottom:56, left:0, right:0, background:WHITE, borderTop:`1px solid ${BORDER}`, padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", zIndex:200, boxShadow:"0 -2px 10px rgba(0,0,0,0.06)" }}>
+      <div>
+        <div style={{ fontSize:11, color:MUTED, fontWeight:600 }}>Total</div>
+        <div style={{ fontSize:20, fontWeight:900, color:BLUE }}>${total.toFixed(2)}</div>
+      </div>
+      <div style={{ display:"flex", gap:8 }}>
+        {step>1&&<button style={{ ...S.btn(WHITE,BLUE,BLUE), padding:"10px 16px", fontSize:13 }} onClick={onBack}>← Back</button>}
+        <button style={{ ...S.btn(step<5?BLUE:GREEN,WHITE), padding:"10px 20px", fontSize:13 }} onClick={onNext}>
+          {step<5?"Continue →":label}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── BOOKING APP ──
 function BookingApp({ user, services, extras, coupons, onComplete }) {
+  const mobile = useIsMobile();
   const [step, setStep] = useState(1);
   const [maxStep, setMaxStep] = useState(1);
   const [error, setError] = useState("");
@@ -227,6 +268,7 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
   const [couponPct, setCouponPct] = useState(0);
   const [couponMsg, setCouponMsg] = useState(null);
   const [done, setDone] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [bk, setBk] = useState({
     svc:services[0]||null, beds:1, baths:1, freq:FREQS[1], extras:[],
     date:null, time:"9:00 AM",
@@ -250,7 +292,13 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
   const VALS = [null,()=>!!bk.svc,()=>!!bk.date&&!!bk.time,()=>!!(bk.firstName&&bk.lastName&&bk.email&&bk.phone&&bk.address&&bk.suburb&&bk.postcode),()=>!!(bk.cardName&&bk.cardNum.length>=16&&bk.cardExp&&bk.cardCvv.length>=3),()=>true];
   const ERRS = ["","Please select a cleaning service.","Please select a date and time.","Please fill all required fields.","Please complete payment details.",""];
 
-  function next() { if(!VALS[step]()){ setError(ERRS[step]); return; } setError(""); const ns=step+1; setStep(ns); setMaxStep(m=>Math.max(m,ns)); }
+  function next() {
+    if (!VALS[step]()) { setError(ERRS[step]); window.scrollTo(0,0); return; }
+    setError("");
+    if (step===5) { submit(); return; }
+    const ns=step+1; setStep(ns); setMaxStep(m=>Math.max(m,ns)); window.scrollTo(0,0);
+  }
+
   function submit() {
     const nb = { id:"YPC"+Math.floor(Math.random()*9000+1000), clientId:user?user.id:"guest", clientName:[bk.firstName,bk.lastName].join(" "), clientEmail:bk.email, service:bk.svc.name, date:bk.date?bk.date.toISOString().split("T")[0]:"", time:bk.time, address:[bk.address,bk.suburb,bk.state,bk.postcode].filter(Boolean).join(", "), total, status:"Confirmed", freq:bk.freq.label, extras:bk.extras.map(e=>e.name) };
     onComplete(nb); setDone(true);
@@ -258,248 +306,307 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
 
   const today = new Date();
   const dates = Array.from({length:21},(_,i)=>{ const d=new Date(today); d.setDate(today.getDate()+i); return d; });
-  const STEP_LABELS = [{ label:"Services" },{ label:"Schedule" },{ label:"Location" },{ label:"Payment" },{ label:"Confirm" }];
+  const STEP_LABELS = ["Services","Schedule","Location","Payment","Confirm"];
+  const p = mobile ? "16px" : "24px 28px";
+  const mw = mobile ? "100%" : "1080px";
 
   if (done) return (
-    <div style={{ maxWidth:540, margin:"48px auto", padding:"0 16px" }}>
-      <div style={{ ...S.panel, textAlign:"center", padding:"52px 36px" }}>
-        <div style={{ width:80, height:80, background:LIGHT_GREEN, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px" }}><Icons.Check size={40}/></div>
-        <h2 style={{ fontSize:26, fontWeight:900, color:GREEN, marginBottom:8 }}>Booking Confirmed!</h2>
-        <p style={{ color:MUTED, marginBottom:24 }}>Confirmation sent to <strong style={{ color:BLUE }}>{bk.email}</strong></p>
-        <div style={{ background:BG, borderRadius:12, padding:20, textAlign:"left", marginBottom:20 }}>
+    <div style={{ maxWidth:540, margin:mobile?"0 auto":"48px auto", padding:mobile?"16px":"0 16px" }}>
+      <div style={{ ...S.panel(mobile), textAlign:"center", padding:mobile?"24px 20px":"52px 36px" }}>
+        <div style={{ width:72, height:72, background:LIGHT_GREEN, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}><Icons.Check size={36}/></div>
+        <h2 style={{ fontSize:mobile?22:26, fontWeight:900, color:GREEN, marginBottom:8 }}>Booking Confirmed!</h2>
+        <p style={{ color:MUTED, marginBottom:20, fontSize:14 }}>Confirmation sent to <strong style={{ color:BLUE }}>{bk.email}</strong></p>
+        <div style={{ background:BG, borderRadius:12, padding:16, textAlign:"left", marginBottom:16 }}>
           {[["Service",bk.svc.name],["Date",bk.date?bk.date.toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"—"],["Time",bk.time],["Total",`$${total.toFixed(2)}`]].map(([k,v])=>(
             <div key={k} style={{ display:"flex", justifyContent:"space-between", marginBottom:8, fontSize:14 }}><span style={{ color:MUTED }}>{k}</span><span style={{ fontWeight:700 }}>{v}</span></div>
           ))}
         </div>
-        <div style={{ background:"#fff8e1", border:"1px solid #ffe082", borderRadius:10, padding:"12px 16px", fontSize:13, color:"#7a5c00", marginBottom:24 }}>⏰ Our team will call <strong>{bk.phone}</strong> within 2 hours.</div>
-        <button style={S.btn(BLUE,WHITE)} onClick={()=>{setDone(false);setStep(1);setMaxStep(1);}}>Book Another Clean</button>
+        <div style={{ background:"#fff8e1", border:"1px solid #ffe082", borderRadius:10, padding:"12px 16px", fontSize:13, color:"#7a5c00", marginBottom:20 }}>⏰ Our team will call <strong>{bk.phone}</strong> within 2 hours.</div>
+        <button style={{ ...S.btn(BLUE,WHITE), width:"100%", padding:"14px" }} onClick={()=>{setDone(false);setStep(1);setMaxStep(1);}}>Book Another Clean</button>
       </div>
+      {mobile && <div style={{ height:70 }}/>}
     </div>
   );
 
   return (
-    <div>
-      <div style={{ background:WHITE, borderBottom:`1px solid ${BORDER}`, padding:"0 28px" }}>
-        <div style={{ maxWidth:1080, margin:"0 auto", display:"flex" }}>
-          {STEP_LABELS.map(({label},i)=>{
+    <div style={{ paddingBottom:mobile?130:0 }}>
+      {/* Step nav */}
+      <div style={{ background:WHITE, borderBottom:`1px solid ${BORDER}`, overflowX:"auto" }}>
+        <div style={{ maxWidth:mw, margin:"0 auto", display:"flex", padding:mobile?"0 8px":"0 28px" }}>
+          {STEP_LABELS.map((label,i)=>{
             const n=i+1, active=step===n, done2=step>n, can=n<=maxStep;
             return (
-              <div key={n} onClick={()=>can&&setStep(n)} style={{ display:"flex", alignItems:"center", gap:8, padding:"16px 16px 16px 0", borderBottom:`3px solid ${active?BLUE:done2?GREEN:"transparent"}`, color:active?BLUE:done2?GREEN:"#bbb", cursor:can?"pointer":"default", fontSize:13, fontWeight:700, marginRight:16, whiteSpace:"nowrap" }}>
-                <span style={{ width:26, height:26, borderRadius:"50%", background:active?BLUE:done2?GREEN:"#e8ecf0", color:WHITE, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:900 }}>{done2?<Icons.Check/>:n}</span>
-                {label}
+              <div key={n} onClick={()=>can&&setStep(n)} style={{ display:"flex", alignItems:"center", gap:6, padding:mobile?"12px 8px":"16px 14px 16px 0", borderBottom:`3px solid ${active?BLUE:done2?GREEN:"transparent"}`, color:active?BLUE:done2?GREEN:"#bbb", cursor:can?"pointer":"default", fontSize:mobile?11:13, fontWeight:700, marginRight:mobile?4:16, whiteSpace:"nowrap" }}>
+                <span style={{ width:22, height:22, borderRadius:"50%", background:active?BLUE:done2?GREEN:"#e8ecf0", color:WHITE, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, flexShrink:0 }}>{done2?<Icons.Check size={11}/>:n}</span>
+                {!mobile||active?label:""}
               </div>
             );
           })}
         </div>
       </div>
-      {error&&<div style={{ maxWidth:1080, margin:"12px auto 0", padding:"0 28px" }}><div style={{ background:"#fdecea", border:"1px solid #f5c6cb", borderRadius:9, padding:"11px 16px", color:"#c0392b", fontSize:14 }}>⚠️ {error}</div></div>}
-      <div style={{ maxWidth:1080, margin:"0 auto", padding:"24px 28px", display:"grid", gridTemplateColumns:"1fr 300px", gap:24 }}>
+
+      {error&&<div style={{ maxWidth:mw, margin:"10px auto 0", padding:mobile?"0 16px":"0 28px" }}><div style={{ background:"#fdecea", border:"1px solid #f5c6cb", borderRadius:9, padding:"10px 14px", color:"#c0392b", fontSize:14 }}>⚠️ {error}</div></div>}
+
+      {/* Mobile summary toggle */}
+      {mobile && bk.svc && (
+        <div onClick={()=>setShowSummary(!showSummary)} style={{ margin:"12px 16px 0", background:LIGHT_BLUE, borderRadius:12, padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer", border:`1px solid ${BLUE}22` }}>
+          <div style={{ fontSize:13, color:BLUE, fontWeight:700 }}>📋 View Summary — ${total.toFixed(2)}</div>
+          <span style={{ color:BLUE }}><Icons.ChevronRight size={16}/></span>
+        </div>
+      )}
+
+      {/* Mobile summary drawer */}
+      {mobile && showSummary && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:500 }} onClick={()=>setShowSummary(false)}>
+          <div style={{ position:"absolute", bottom:0, left:0, right:0, background:WHITE, borderRadius:"20px 20px 0 0", padding:"20px 20px 80px", maxHeight:"80vh", overflowY:"auto" }} onClick={e=>e.stopPropagation()}>
+            <div style={{ width:40, height:4, background:BORDER, borderRadius:2, margin:"0 auto 16px" }}/>
+            <div style={{ fontSize:16, fontWeight:800, marginBottom:16 }}>Booking Summary</div>
+            <div style={{ background:BG, borderRadius:12, padding:16 }}>
+              {[["Service",bk.svc.name],["Property",bk.svc.hasRooms?`${bk.beds} bed, ${bk.baths} bath`:"Flat rate"],["Frequency",bk.freq.label]].map(([k,v])=>(
+                <div key={k} style={{ display:"flex", justifyContent:"space-between", marginBottom:8, fontSize:14 }}><span style={{ color:MUTED }}>{k}</span><span style={{ fontWeight:600 }}>{v}</span></div>
+              ))}
+              {bk.extras.map(e=><div key={e.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:8, fontSize:14 }}><span style={{ color:MUTED }}>{e.name}</span><span style={{ fontWeight:600, color:GREEN }}>+${e.price}</span></div>)}
+              <hr style={{ border:"none", borderTop:`1px dashed ${BORDER}`, margin:"10px 0" }}/>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6, fontSize:14 }}><span style={{ color:MUTED }}>Subtotal</span><span style={{ fontWeight:700 }}>${subtotal.toFixed(2)}</span></div>
+              {discAmt>0&&<div style={{ display:"flex", justifyContent:"space-between", marginBottom:6, fontSize:14, color:GREEN }}><span>Discount</span><span style={{ fontWeight:700 }}>-${discAmt.toFixed(2)}</span></div>}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:8 }}><span style={{ fontWeight:800, fontSize:16 }}>Total</span><span style={{ fontWeight:900, fontSize:24, color:BLUE }}>${total.toFixed(2)}</span></div>
+            </div>
+            <div style={{ display:"flex", gap:8, marginTop:16 }}>
+              <input value={coupon} onChange={e=>setCoupon(e.target.value.toUpperCase())} placeholder="Promo code" style={{ ...S.inp, flex:1 }}/>
+              <button onClick={applyC} style={S.btn(BLUE,WHITE)}>Apply</button>
+            </div>
+            {couponMsg&&<div style={{ fontSize:13, marginTop:6, color:couponMsg.ok?GREEN:"#e74c3c", fontWeight:600 }}>{couponMsg.text}</div>}
+          </div>
+        </div>
+      )}
+
+      <div style={{ maxWidth:mw, margin:"0 auto", padding:p, display:mobile?"block":"grid", gridTemplateColumns:"1fr 300px", gap:24 }}>
         <div>
+          {/* STEP 1 */}
           {step===1&&<>
-            <div style={S.panel}>
-              <div style={S.secTitle}>What kind of clean would you like?</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:12 }}>
+            <div style={S.panel(mobile)}>
+              <div style={S.secTitle(mobile)}>What kind of clean?</div>
+              <div style={{ display:"grid", gridTemplateColumns:mobile?"repeat(2,1fr)":"repeat(auto-fill,minmax(130px,1fr))", gap:mobile?10:12 }}>
                 {services.map(svc=>{ const a=bk.svc?.id===svc.id; return (
-                  <div key={svc.id} onClick={()=>setV("svc",svc)} style={{ border:`2px solid ${a?BLUE:BORDER}`, borderRadius:14, padding:"20px 12px", textAlign:"center", cursor:"pointer", background:a?LIGHT_BLUE:WHITE, transition:"all .2s" }}>
-                    <div style={{ color:a?BLUE:MUTED, display:"flex", justifyContent:"center", marginBottom:10 }}><svc.Icon size={32}/></div>
-                    <div style={{ fontSize:13, fontWeight:700, color:a?BLUE:TEXT }}>{svc.name}</div>
-                    <div style={{ fontSize:12, color:a?BLUE:MUTED, marginTop:4 }}>from ${svc.base}</div>
-                    {a&&<div style={{ marginTop:8 }}><span style={{ background:BLUE, color:WHITE, borderRadius:50, padding:"2px 10px", fontSize:10, fontWeight:800 }}>✓ Selected</span></div>}
+                  <div key={svc.id} onClick={()=>setV("svc",svc)} style={{ border:`2px solid ${a?BLUE:BORDER}`, borderRadius:12, padding:mobile?"14px 10px":"20px 12px", textAlign:"center", cursor:"pointer", background:a?LIGHT_BLUE:WHITE, transition:"all .2s" }}>
+                    <div style={{ color:a?BLUE:MUTED, display:"flex", justifyContent:"center", marginBottom:8 }}><svc.Icon size={mobile?26:32}/></div>
+                    <div style={{ fontSize:mobile?12:13, fontWeight:700, color:a?BLUE:TEXT, lineHeight:1.3 }}>{svc.name}</div>
+                    <div style={{ fontSize:11, color:a?BLUE:MUTED, marginTop:3 }}>from ${svc.base}</div>
+                    {a&&<div style={{ marginTop:6 }}><span style={{ background:BLUE, color:WHITE, borderRadius:50, padding:"2px 8px", fontSize:10, fontWeight:800 }}>✓</span></div>}
                   </div>
                 );})}
               </div>
             </div>
             {bk.svc?.hasRooms&&(
-              <div style={S.panel}>
-                <div style={S.secTitle}>Bedrooms & Bathrooms</div>
+              <div style={S.panel(mobile)}>
+                <div style={S.secTitle(mobile)}>Bedrooms & Bathrooms</div>
                 {[{label:"Bedrooms",Icon:Icons.Bed,key:"beds",max:8},{label:"Bathrooms",Icon:Icons.Bath,key:"baths",max:6}].map(r=>(
-                  <div key={r.key} style={{ marginBottom:24 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, fontWeight:600, fontSize:14 }}><span style={{ color:BLUE }}><r.Icon/></span>{r.label}</div>
-                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                  <div key={r.key} style={{ marginBottom:20 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10, fontWeight:600, fontSize:14 }}><span style={{ color:BLUE }}><r.Icon/></span>{r.label}</div>
+                    <div style={{ display:"flex", gap:mobile?10:8, flexWrap:"wrap" }}>
                       {Array.from({length:r.max},(_,i)=>i+1).map(n=>(
-                        <div key={n} onClick={()=>setV(r.key,n)} style={{ width:44, height:44, borderRadius:10, border:`2px solid ${bk[r.key]===n?BLUE:BORDER}`, background:bk[r.key]===n?BLUE:WHITE, color:bk[r.key]===n?WHITE:TEXT, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontWeight:800, fontSize:16, transition:"all .2s" }}>{n}</div>
+                        <div key={n} onClick={()=>setV(r.key,n)} style={{ width:mobile?46:44, height:mobile?46:44, borderRadius:10, border:`2px solid ${bk[r.key]===n?BLUE:BORDER}`, background:bk[r.key]===n?BLUE:WHITE, color:bk[r.key]===n?WHITE:TEXT, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontWeight:800, fontSize:16, transition:"all .2s" }}>{n}</div>
                       ))}
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            <div style={S.panel}>
-              <div style={S.secTitle}>How often?</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))", gap:12 }}>
+            <div style={S.panel(mobile)}>
+              <div style={S.secTitle(mobile)}>How often?</div>
+              <div style={{ display:"grid", gridTemplateColumns:mobile?"1fr 1fr":"repeat(auto-fill,minmax(170px,1fr))", gap:mobile?10:12 }}>
                 {FREQS.map(f=>{ const a=bk.freq.id===f.id; return (
-                  <div key={f.id} onClick={()=>setV("freq",f)} style={{ border:`2px solid ${a?GREEN:BORDER}`, borderRadius:12, padding:"16px 18px", cursor:"pointer", background:a?LIGHT_GREEN:WHITE, transition:"all .2s" }}>
-                    <div style={{ fontWeight:800, fontSize:14, color:a?GREEN:TEXT }}>{f.label}</div>
-                    {f.disc>0&&<div style={{ marginTop:6 }}><span style={{ background:GREEN, color:WHITE, borderRadius:50, padding:"2px 10px", fontSize:11, fontWeight:800 }}>{f.disc}% off</span></div>}
+                  <div key={f.id} onClick={()=>setV("freq",f)} style={{ border:`2px solid ${a?GREEN:BORDER}`, borderRadius:12, padding:mobile?"14px":"16px 18px", cursor:"pointer", background:a?LIGHT_GREEN:WHITE }}>
+                    <div style={{ fontWeight:800, fontSize:mobile?13:14, color:a?GREEN:TEXT }}>{f.label}</div>
+                    {f.disc>0&&<div style={{ marginTop:5 }}><span style={{ background:GREEN, color:WHITE, borderRadius:50, padding:"2px 8px", fontSize:10, fontWeight:800 }}>{f.disc}% off</span></div>}
                   </div>
                 );})}
               </div>
             </div>
-            <div style={S.panel}>
-              <div style={S.secTitle}>Extra services</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:12 }}>
+            <div style={S.panel(mobile)}>
+              <div style={S.secTitle(mobile)}>Extra services</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                 {extras.map(ex=>{ const a=bk.extras.some(e=>e.id===ex.id); return (
-                  <div key={ex.id} onClick={()=>togExtra(ex)} style={{ border:`2px solid ${a?BLUE:BORDER}`, borderRadius:12, padding:"16px", cursor:"pointer", background:a?LIGHT_BLUE:WHITE, display:"flex", alignItems:"center", gap:12, transition:"all .2s" }}>
-                    <div style={{ color:a?BLUE:MUTED, flexShrink:0 }}><ex.Icon/></div>
-                    <div><div style={{ fontWeight:700, fontSize:13, color:a?BLUE:TEXT }}>{ex.name}</div><div style={{ fontSize:13, color:GREEN, fontWeight:700, marginTop:2 }}>+${ex.price}</div></div>
-                    {a&&<div style={{ marginLeft:"auto" }}><div style={{ width:20, height:20, background:BLUE, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:WHITE }}><Icons.Check size={12}/></div></div>}
+                  <div key={ex.id} onClick={()=>togExtra(ex)} style={{ border:`2px solid ${a?BLUE:BORDER}`, borderRadius:12, padding:"14px", cursor:"pointer", background:a?LIGHT_BLUE:WHITE, display:"flex", alignItems:"center", gap:14 }}>
+                    <div style={{ color:a?BLUE:MUTED, flexShrink:0 }}><ex.Icon size={24}/></div>
+                    <div style={{ flex:1 }}><div style={{ fontWeight:700, fontSize:14, color:a?BLUE:TEXT }}>{ex.name}</div><div style={{ fontSize:13, color:GREEN, fontWeight:700 }}>+${ex.price}</div></div>
+                    <div style={{ width:24, height:24, borderRadius:"50%", background:a?BLUE:BORDER, display:"flex", alignItems:"center", justifyContent:"center", color:WHITE, flexShrink:0 }}>{a&&<Icons.Check size={13}/>}</div>
                   </div>
                 );})}
               </div>
             </div>
-            <div style={S.panel}>
-              <div style={S.secTitle}>Postcode & Discount</div>
-              <input type="text" maxLength={4} value={bk.postcode} onChange={set("postcode")} placeholder="e.g. 2148" style={{ ...S.inp, width:160 }}/>
-              <div style={{ marginTop:18 }}><div style={S.sLbl}>Discount code</div>
-                <div style={{ display:"flex", gap:10 }}>
-                  <input value={coupon} onChange={e=>setCoupon(e.target.value.toUpperCase())} placeholder="Enter code" style={{ ...S.inp, width:200 }}/>
-                  <button onClick={applyC} style={S.btn(BLUE,WHITE)}>Apply</button>
-                </div>
-                {couponMsg&&<div style={{ fontSize:13, marginTop:6, color:couponMsg.ok?GREEN:"#e74c3c", fontWeight:600 }}>{couponMsg.text}</div>}
+            {!mobile&&<div style={S.panel(false)}>
+              <div style={S.secTitle(false)}>Discount code</div>
+              <div style={{ display:"flex", gap:10 }}>
+                <input value={coupon} onChange={e=>setCoupon(e.target.value.toUpperCase())} placeholder="Enter code" style={{ ...S.inp, maxWidth:220 }}/>
+                <button onClick={applyC} style={S.btn(BLUE,WHITE)}>Apply</button>
               </div>
-            </div>
+              {couponMsg&&<div style={{ fontSize:13, marginTop:6, color:couponMsg.ok?GREEN:"#e74c3c", fontWeight:600 }}>{couponMsg.text}</div>}
+            </div>}
           </>}
 
+          {/* STEP 2 */}
           {step===2&&(
-            <div style={S.panel}>
-              <div style={S.secTitle}>Choose your date & time</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:6, marginBottom:24 }}>
-                {DAYS_SHORT.map(d=><div key={d} style={{ textAlign:"center", fontSize:11, color:MUTED, fontWeight:800, padding:"4px 0" }}>{d}</div>)}
+            <div style={S.panel(mobile)}>
+              <div style={S.secTitle(mobile)}>Choose date & time</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:mobile?4:6, marginBottom:20 }}>
+                {DAYS_SHORT.map(d=><div key={d} style={{ textAlign:"center", fontSize:10, color:MUTED, fontWeight:800, padding:"3px 0" }}>{d}</div>)}
                 {dates.map((d,i)=>{ const a=bk.date&&d.toDateString()===bk.date.toDateString(); const past=d<today&&d.toDateString()!==today.toDateString(); return (
-                  <div key={i} onClick={()=>!past&&setV("date",d)} style={{ border:`2px solid ${a?BLUE:BORDER}`, borderRadius:10, padding:"10px 4px", textAlign:"center", cursor:past?"not-allowed":"pointer", background:a?BLUE:past?"#f8f8f8":WHITE, opacity:past?0.4:1, transition:"all .2s" }}>
-                    <div style={{ fontSize:10, color:a?"rgba(255,255,255,0.8)":MUTED }}>{d.toLocaleString("default",{month:"short"})}</div>
-                    <div style={{ fontSize:16, fontWeight:900, color:a?WHITE:past?"#ccc":TEXT }}>{d.getDate()}</div>
+                  <div key={i} onClick={()=>!past&&setV("date",d)} style={{ border:`2px solid ${a?BLUE:BORDER}`, borderRadius:8, padding:mobile?"8px 2px":"10px 4px", textAlign:"center", cursor:past?"not-allowed":"pointer", background:a?BLUE:past?"#f8f8f8":WHITE, opacity:past?0.4:1 }}>
+                    <div style={{ fontSize:9, color:a?"rgba(255,255,255,0.8)":MUTED }}>{d.toLocaleString("default",{month:"short"})}</div>
+                    <div style={{ fontSize:mobile?13:16, fontWeight:900, color:a?WHITE:past?"#ccc":TEXT }}>{d.getDate()}</div>
                   </div>
                 );})}
               </div>
               <div style={S.sLbl}>Preferred time</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))", gap:10 }}>
-                {TIME_SLOTS.map(t=>{ const a=bk.time===t; return <div key={t} onClick={()=>setV("time",t)} style={{ border:`2px solid ${a?BLUE:BORDER}`, borderRadius:10, padding:"12px", textAlign:"center", cursor:"pointer", background:a?BLUE:WHITE, color:a?WHITE:MUTED, fontWeight:a?800:500, fontSize:13, transition:"all .2s" }}>{t}</div>; })}
+              <div style={{ display:"grid", gridTemplateColumns:mobile?"repeat(3,1fr)":"repeat(auto-fill,minmax(100px,1fr))", gap:mobile?8:10 }}>
+                {TIME_SLOTS.map(t=>{ const a=bk.time===t; return <div key={t} onClick={()=>setV("time",t)} style={{ border:`2px solid ${a?BLUE:BORDER}`, borderRadius:10, padding:mobile?"11px 6px":"12px", textAlign:"center", cursor:"pointer", background:a?BLUE:WHITE, color:a?WHITE:MUTED, fontWeight:a?800:500, fontSize:mobile?12:13 }}>{t}</div>; })}
               </div>
-              {bk.date&&<div style={{ marginTop:20, background:LIGHT_GREEN, border:`1px solid ${GREEN}44`, borderRadius:10, padding:"13px 18px", color:GREEN, fontSize:14, fontWeight:700 }}>✅ {bk.date.toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"})} at {bk.time}</div>}
+              {bk.date&&<div style={{ marginTop:16, background:LIGHT_GREEN, border:`1px solid ${GREEN}44`, borderRadius:10, padding:"12px 14px", color:GREEN, fontSize:13, fontWeight:700 }}>✅ {bk.date.toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"})} at {bk.time}</div>}
             </div>
           )}
 
+          {/* STEP 3 */}
           {step===3&&(
-            <div style={S.panel}>
-              <div style={S.secTitle}>Your contact details</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-                {[["First Name","firstName","text","Jane"],["Last Name","lastName","text","Smith"],["Email","email","email","jane@example.com"],["Phone","phone","tel","04XX XXX XXX"]].map(([l,k,t,p])=>(
-                  <div key={k}><div style={S.sLbl}>{l} *</div><input type={t} value={bk[k]} onChange={set(k)} placeholder={p} style={S.inp}/></div>
+            <div style={S.panel(mobile)}>
+              <div style={S.secTitle(mobile)}>Your details</div>
+              <div style={{ display:"grid", gridTemplateColumns:mobile?"1fr":"1fr 1fr", gap:mobile?12:16 }}>
+                {[["First Name","firstName","text","Jane"],["Last Name","lastName","text","Smith"],["Email","email","email","jane@example.com"],["Phone","phone","tel","04XX XXX XXX"]].map(([l,k,t,ph])=>(
+                  <div key={k}><div style={S.sLbl}>{l} *</div><input type={t} value={bk[k]} onChange={set(k)} placeholder={ph} style={S.inp}/></div>
                 ))}
               </div>
-              <div style={S.sLbl}>Street Address *</div><input value={bk.address} onChange={set("address")} placeholder="123 Main Street" style={S.inp}/>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 140px", gap:16, marginTop:4 }}>
+              <div style={S.sLbl}>Street Address *</div>
+              <input value={bk.address} onChange={set("address")} placeholder="123 Main Street" style={S.inp}/>
+              <div style={{ display:"grid", gridTemplateColumns:mobile?"1fr 1fr":"1fr 1fr 140px", gap:mobile?12:16, marginTop:4 }}>
                 <div><div style={S.sLbl}>Suburb *</div><input value={bk.suburb} onChange={set("suburb")} placeholder="Blacktown" style={S.inp}/></div>
                 <div><div style={S.sLbl}>State</div><select value={bk.state} onChange={set("state")} style={S.inp}>{["NSW","VIC","QLD","WA","SA","TAS","ACT","NT"].map(s=><option key={s}>{s}</option>)}</select></div>
-                <div><div style={S.sLbl}>Postcode *</div><input value={bk.postcode} onChange={set("postcode")} maxLength={4} placeholder="2148" style={S.inp}/></div>
+                {!mobile&&<div><div style={S.sLbl}>Postcode *</div><input value={bk.postcode} onChange={set("postcode")} maxLength={4} placeholder="2148" style={S.inp}/></div>}
               </div>
+              {mobile&&<div style={{ marginTop:12 }}><div style={S.sLbl}>Postcode *</div><input value={bk.postcode} onChange={set("postcode")} maxLength={4} placeholder="2148" style={{ ...S.inp, width:140 }}/></div>}
               <div style={S.sLbl}>Special Instructions</div>
               <textarea value={bk.notes} onChange={set("notes")} rows={3} placeholder="Key location, gate code, pets…" style={{ ...S.inp, resize:"vertical" }}/>
             </div>
           )}
 
+          {/* STEP 4 */}
           {step===4&&(
-            <div style={S.panel}>
-              <div style={S.secTitle}>Secure Payment</div>
-              <div style={{ background:BG, borderRadius:12, padding:"16px 20px", marginBottom:24, border:`1px solid ${BORDER}` }}>
+            <div style={S.panel(mobile)}>
+              <div style={S.secTitle(mobile)}>Secure Payment</div>
+              <div style={{ background:BG, borderRadius:12, padding:"14px 16px", marginBottom:20 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6, fontSize:14 }}><span style={{ color:MUTED }}>Service</span><span style={{ fontWeight:700 }}>{bk.svc.name}</span></div>
                 {discAmt>0&&<div style={{ display:"flex", justifyContent:"space-between", fontSize:14, color:GREEN, marginBottom:6 }}><span>Discount</span><span style={{ fontWeight:700 }}>-${discAmt.toFixed(2)}</span></div>}
                 <hr style={{ border:"none", borderTop:`1px dashed ${BORDER}`, margin:"8px 0" }}/>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}><span style={{ fontWeight:800 }}>Total</span><span style={{ fontWeight:900, fontSize:24, color:BLUE }}>${total.toFixed(2)}</span></div>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}><span style={{ fontWeight:800 }}>Total</span><span style={{ fontWeight:900, fontSize:22, color:BLUE }}>${total.toFixed(2)}</span></div>
               </div>
-              <div style={{ marginBottom:16 }}><div style={S.sLbl}>Name on card *</div><input value={bk.cardName} onChange={set("cardName")} placeholder="Jane Smith" style={S.inp}/></div>
-              <div style={{ marginBottom:16 }}><div style={S.sLbl}>Card number *</div><input value={bk.cardNum} onChange={e=>setV("cardNum",e.target.value.replace(/\D/g,"").slice(0,16))} placeholder="1234 5678 9012 3456" style={S.inp}/></div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
+              <div style={{ marginBottom:14 }}><div style={S.sLbl}>Name on card *</div><input value={bk.cardName} onChange={set("cardName")} placeholder="Jane Smith" style={S.inp}/></div>
+              <div style={{ marginBottom:14 }}><div style={S.sLbl}>Card number *</div><input value={bk.cardNum} onChange={e=>setV("cardNum",e.target.value.replace(/\D/g,"").slice(0,16))} placeholder="1234 5678 9012 3456" style={S.inp}/></div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
                 <div><div style={S.sLbl}>Expiry *</div><input value={bk.cardExp} onChange={set("cardExp")} placeholder="MM/YY" maxLength={5} style={S.inp}/></div>
                 <div><div style={S.sLbl}>CVV *</div><input value={bk.cardCvv} onChange={e=>setV("cardCvv",e.target.value.replace(/\D/g,"").slice(0,4))} placeholder="123" maxLength={4} style={S.inp}/></div>
               </div>
-              <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
-                {["VISA","Mastercard","AMEX","PayPal"].map(m=><span key={m} style={{ background:BG, border:`1px solid ${BORDER}`, borderRadius:7, padding:"6px 14px", fontSize:12, color:MUTED, fontWeight:700 }}>{m}</span>)}
-              </div>
-              <div style={{ marginTop:16, display:"flex", alignItems:"center", gap:8, fontSize:13, color:MUTED }}><Icons.Shield/> Protected by 256-bit SSL encryption</div>
+              <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, color:MUTED }}><Icons.Shield/> Protected by 256-bit SSL encryption</div>
             </div>
           )}
 
+          {/* STEP 5 */}
           {step===5&&(
-            <div style={S.panel}>
-              <div style={S.secTitle}>Review & Confirm</div>
+            <div style={S.panel(mobile)}>
+              <div style={S.secTitle(mobile)}>Review & Confirm</div>
               {[
                 {title:"Service",rows:[["Service",bk.svc.name],["Property",bk.svc.hasRooms?`${bk.beds} bed, ${bk.baths} bath`:"Flat rate"],["Frequency",bk.freq.label],["Extras",bk.extras.length?bk.extras.map(e=>e.name).join(", "):"None"]]},
                 {title:"Schedule",rows:[["Date",bk.date?bk.date.toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"—"],["Time",bk.time]]},
                 {title:"Location",rows:[["Name",[bk.firstName,bk.lastName].join(" ")],["Address",[bk.address,bk.suburb,bk.state,bk.postcode].filter(Boolean).join(", ")],["Email",bk.email],["Phone",bk.phone]]},
                 {title:"Pricing",rows:[["Subtotal",`$${subtotal.toFixed(2)}`],["Discount",discAmt>0?`-$${discAmt.toFixed(2)}`:"—"],["Total",`$${total.toFixed(2)}`]]},
               ].map(sec=>(
-                <div key={sec.title} style={{ background:BG, borderRadius:12, padding:"16px 20px", marginBottom:14, border:`1px solid ${BORDER}` }}>
-                  <div style={{ fontWeight:800, fontSize:13, color:BLUE, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>{sec.title}</div>
-                  {sec.rows.map(([k,v])=>(<div key={k} style={{ display:"flex", justifyContent:"space-between", marginBottom:8, fontSize:14 }}><span style={{ color:MUTED }}>{k}</span><span style={{ fontWeight:600 }}>{v}</span></div>))}
+                <div key={sec.title} style={{ background:BG, borderRadius:12, padding:"14px 16px", marginBottom:12 }}>
+                  <div style={{ fontWeight:800, fontSize:12, color:BLUE, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>{sec.title}</div>
+                  {sec.rows.map(([k,v])=>(<div key={k} style={{ display:"flex", justifyContent:"space-between", marginBottom:7, fontSize:14 }}><span style={{ color:MUTED }}>{k}</span><span style={{ fontWeight:600, textAlign:"right", maxWidth:"60%" }}>{v}</span></div>))}
                 </div>
               ))}
-              <div style={{ background:LIGHT_BLUE, borderRadius:10, padding:"13px 18px", fontSize:13, color:"#1a3d60" }}>✅ By confirming you agree to Yahweh Property Care's Terms of Service.</div>
+              <div style={{ background:LIGHT_BLUE, borderRadius:10, padding:"12px 14px", fontSize:13, color:"#1a3d60" }}>✅ By confirming you agree to Yahweh Property Care's Terms of Service.</div>
             </div>
           )}
 
-          <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
-            {step>1?<button style={{ ...S.btn(WHITE,BLUE,BLUE), display:"flex", alignItems:"center", gap:6 }} onClick={()=>setStep(s=>s-1)}><Icons.ChevronLeft/> Back</button>:<span/>}
-            {step<5?<button style={{ ...S.btn(BLUE,WHITE), display:"flex", alignItems:"center", gap:6 }} onClick={next}>Continue <Icons.ChevronRight/></button>:<button style={{ ...S.btn(GREEN,WHITE), display:"flex", alignItems:"center", gap:8, fontSize:15 }} onClick={submit}><Icons.Check/> Confirm & Pay ${total.toFixed(2)}</button>}
-          </div>
+          {/* Desktop nav buttons */}
+          {!mobile && (
+            <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
+              {step>1?<button style={{ ...S.btn(WHITE,BLUE,BLUE), display:"flex", alignItems:"center", gap:6 }} onClick={()=>{ setStep(s=>s-1); window.scrollTo(0,0); }}><Icons.ChevronLeft/> Back</button>:<span/>}
+              {step<5?<button style={{ ...S.btn(BLUE,WHITE), display:"flex", alignItems:"center", gap:6 }} onClick={next}>Continue <Icons.ChevronRight/></button>:<button style={{ ...S.btn(GREEN,WHITE), display:"flex", alignItems:"center", gap:8, fontSize:15 }} onClick={next}><Icons.Check/> Confirm & Pay ${total.toFixed(2)}</button>}
+            </div>
+          )}
         </div>
-        <Sidebar bk={bk} coupon={coupon} setCoupon={setCoupon} couponPct={couponPct} onApply={applyC} couponMsg={couponMsg}/>
+
+        {/* Desktop sidebar */}
+        {!mobile && <Sidebar bk={bk} coupon={coupon} setCoupon={setCoupon} couponPct={couponPct} onApply={applyC} couponMsg={couponMsg}/>}
       </div>
+
+      {/* Mobile sticky price bar */}
+      {mobile && <MobilePriceStrip total={total} step={step} onNext={next} onBack={()=>{ setStep(s=>s-1); window.scrollTo(0,0); }} label={`Confirm & Pay $${total.toFixed(2)}`}/>}
     </div>
   );
 }
 
+// ── CLIENT DASHBOARD ──
 function ClientDash({ user, bookings, onLogout, onBook }) {
+  const mobile = useIsMobile();
   const mine = bookings.filter(b=>b.clientId===user.id||b.clientEmail===user.email);
   const upcoming = mine.filter(b=>["Confirmed","Pending"].includes(b.status));
   const past = mine.filter(b=>["Completed","Cancelled"].includes(b.status));
   return (
-    <div style={{ maxWidth:900, margin:"0 auto", padding:"28px 24px" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
-        <div><h2 style={{ fontSize:22, fontWeight:900 }}>Welcome, <span style={{ color:BLUE }}>{user.name.split(" ")[0]}</span> 👋</h2><p style={{ color:MUTED, fontSize:13 }}>{user.email}</p></div>
-        <div style={{ display:"flex", gap:10 }}>
+    <div style={{ maxWidth:900, margin:"0 auto", padding:mobile?"12px 16px":"28px 24px", paddingBottom:mobile?80:28 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+        <div>
+          <h2 style={{ fontSize:mobile?18:22, fontWeight:900 }}>Welcome, <span style={{ color:BLUE }}>{user.name.split(" ")[0]}</span> 👋</h2>
+          <p style={{ color:MUTED, fontSize:12, marginTop:2 }}>{user.email}</p>
+        </div>
+        {!mobile&&<div style={{ display:"flex", gap:10 }}>
           <button style={S.btn(GREEN,WHITE)} onClick={onBook}>+ New Booking</button>
           <button style={S.btn(WHITE,BLUE,BLUE)} onClick={onLogout}>Logout</button>
-        </div>
+        </div>}
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16, marginBottom:28 }}>
-        {[["📋","Total Bookings",mine.length,BLUE],["📅","Upcoming",upcoming.length,"#e67e22"],["✅","Completed",past.filter(b=>b.status==="Completed").length,GREEN]].map(([icon,label,val,color])=>(
-          <div key={label} style={{ background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, padding:"20px 22px", boxShadow:"0 2px 12px rgba(27,117,187,0.06)" }}>
-            <div style={{ fontSize:28, marginBottom:8 }}>{icon}</div>
-            <div style={{ fontSize:30, fontWeight:900, color }}>{val}</div>
-            <div style={{ fontSize:13, color:MUTED }}>{label}</div>
+
+      {mobile&&<button style={{ ...S.btn(GREEN,WHITE), width:"100%", padding:"14px", marginBottom:16, fontSize:15, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }} onClick={onBook}><Icons.Plus size={16}/> Book a New Clean</button>}
+
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:mobile?10:16, marginBottom:mobile?16:28 }}>
+        {[["📋","Total",mine.length,BLUE],["📅","Upcoming",upcoming.length,"#e67e22"],["✅","Done",past.filter(b=>b.status==="Completed").length,GREEN]].map(([icon,label,val,color])=>(
+          <div key={label} style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, padding:mobile?"14px 12px":"20px 22px", textAlign:mobile?"center":"left" }}>
+            <div style={{ fontSize:mobile?22:28, marginBottom:4 }}>{icon}</div>
+            <div style={{ fontSize:mobile?22:30, fontWeight:900, color }}>{val}</div>
+            <div style={{ fontSize:mobile?11:13, color:MUTED }}>{label}</div>
           </div>
         ))}
       </div>
-      {upcoming.length>0&&<><div style={{ fontSize:16, fontWeight:800, color:BLUE, marginBottom:12 }}>Upcoming</div><div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:24 }}>{upcoming.map(b=><BkCard key={b.id} b={b}/>)}</div></>}
-      <div style={{ fontSize:16, fontWeight:800, color:MUTED, marginBottom:12 }}>Past Bookings</div>
-      {past.length===0?<div style={{ color:MUTED, fontSize:14 }}>No past bookings.</div>:<div style={{ display:"flex", flexDirection:"column", gap:10 }}>{past.map(b=><BkCard key={b.id} b={b}/>)}</div>}
+
+      {upcoming.length>0&&<><div style={{ fontSize:mobile?14:16, fontWeight:800, color:BLUE, marginBottom:10 }}>Upcoming Bookings</div><div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:20 }}>{upcoming.map(b=><BkCard key={b.id} b={b} mobile={mobile}/>)}</div></>}
+      <div style={{ fontSize:mobile?14:16, fontWeight:800, color:MUTED, marginBottom:10 }}>Past Bookings</div>
+      {past.length===0?<div style={{ color:MUTED, fontSize:14, padding:"16px 0" }}>No past bookings yet.</div>:<div style={{ display:"flex", flexDirection:"column", gap:10 }}>{past.map(b=><BkCard key={b.id} b={b} mobile={mobile}/>)}</div>}
     </div>
   );
 }
 
-function BkCard({ b }) {
+function BkCard({ b, mobile }) {
   return (
-    <div style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, padding:"16px 20px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12 }}>
-      <div>
-        <div style={{ fontWeight:800, fontSize:15, marginBottom:4 }}>{b.service}</div>
-        <div style={{ fontSize:13, color:MUTED, display:"flex", alignItems:"center", gap:6 }}><Icons.Calendar/>{b.date} · {b.time}</div>
-        <div style={{ fontSize:12, color:MUTED, marginTop:4 }}>{b.address}</div>
-      </div>
-      <div style={{ textAlign:"right" }}>
+    <div style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, padding:mobile?"14px":"16px 20px" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:mobile?8:0 }}>
+        <div style={{ fontWeight:800, fontSize:mobile?14:15 }}>{b.service}</div>
         <StatusTag s={b.status}/>
-        <div style={{ fontWeight:900, fontSize:22, color:BLUE, marginTop:8 }}>${b.total.toFixed(2)}</div>
+      </div>
+      <div style={{ fontSize:12, color:MUTED, marginTop:4, display:"flex", alignItems:"center", gap:6 }}><Icons.Calendar size={13}/>{b.date} · {b.time}</div>
+      <div style={{ fontSize:12, color:MUTED, marginTop:3 }}>{b.address}</div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:mobile?10:8 }}>
         <div style={{ fontSize:12, color:MUTED }}>{b.freq}</div>
+        <div style={{ fontWeight:900, fontSize:mobile?18:22, color:BLUE }}>${b.total.toFixed(2)}</div>
       </div>
     </div>
   );
 }
 
+// ── MODAL ──
 function Modal({ title, onClose, children }) {
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:999, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-      <div style={{ background:WHITE, borderRadius:16, width:"100%", maxWidth:460, maxHeight:"85vh", overflowY:"auto", padding:28, boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:999, display:"flex", alignItems:"flex-end", justifyContent:"center", padding:0 }}>
+      <div style={{ background:WHITE, borderRadius:"20px 20px 0 0", width:"100%", maxWidth:480, maxHeight:"90vh", overflowY:"auto", padding:24 }}>
+        <div style={{ width:40, height:4, background:BORDER, borderRadius:2, margin:"0 auto 16px" }}/>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
           <h3 style={{ fontWeight:800, fontSize:17 }}>{title}</h3>
           <button onClick={onClose} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:MUTED }}>✕</button>
@@ -512,9 +619,9 @@ function Modal({ title, onClose, children }) {
 
 function ConfirmDel({ msg, onYes, onNo }) {
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }}>
-      <div style={{ background:WHITE, borderRadius:16, maxWidth:360, padding:32, textAlign:"center", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
-        <div style={{ fontSize:48, marginBottom:12 }}>⚠️</div>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div style={{ background:WHITE, borderRadius:16, maxWidth:340, width:"100%", padding:28, textAlign:"center", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
+        <div style={{ fontSize:44, marginBottom:12 }}>⚠️</div>
         <p style={{ fontSize:15, marginBottom:24, lineHeight:1.5 }}>{msg}</p>
         <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
           <button style={S.btn("#e74c3c",WHITE)} onClick={onYes}>Yes, Delete</button>
@@ -525,7 +632,9 @@ function ConfirmDel({ msg, onYes, onNo }) {
   );
 }
 
+// ── ADMIN DASHBOARD ──
 function AdminDash({ bookings, setBookings, clients, setClients, services, setServices, extras, setExtras, coupons, setCoupons, onLogout }) {
+  const mobile = useIsMobile();
   const [tab, setTab] = useState("bookings");
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
@@ -534,6 +643,7 @@ function AdminDash({ bookings, setBookings, clients, setClients, services, setSe
   const [extraModal, setExtraModal] = useState(null);
   const [couponModal, setCouponModal] = useState(null);
   const [clientModal, setClientModal] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const SC = { Pending:"#e67e22", Confirmed:BLUE, Completed:GREEN, Cancelled:"#e74c3c" };
   const TABS = [
@@ -554,7 +664,7 @@ function AdminDash({ bookings, setBookings, clients, setClients, services, setSe
 
   function updBk(id,status){ setBookings(p=>p.map(b=>b.id===id?{...b,status}:b)); }
   function delBk(id){ setConfirm({msg:`Delete booking ${id}?`,action:()=>{setBookings(p=>p.filter(b=>b.id!==id));setConfirm(null);}}); }
-  function delClient(id){ setConfirm({msg:"Delete this client and all their bookings?",action:()=>{setClients(p=>p.filter(c=>c.id!==id));setBookings(p=>p.filter(b=>b.clientId!==id));setConfirm(null);}}); }
+  function delClient(id){ setConfirm({msg:"Delete this client?",action:()=>{setClients(p=>p.filter(c=>c.id!==id));setBookings(p=>p.filter(b=>b.clientId!==id));setConfirm(null);}}); }
   function saveClient(d){ if(d.id) setClients(p=>p.map(c=>c.id===d.id?d:c)); else setClients(p=>[...p,{...d,id:"c"+uid()}]); setClientModal(null); }
   function saveSvc(d){ if(d.id) setServices(p=>p.map(s=>s.id===d.id?{...d,base:Number(d.base),Icon:s.Icon}:s)); else setServices(p=>[...p,{...d,id:"s"+uid(),base:Number(d.base),Icon:Icons.Sparkle}]); setSvcModal(null); }
   function delSvc(id){ setConfirm({msg:"Delete this service?",action:()=>{setServices(p=>p.filter(s=>s.id!==id));setConfirm(null);}}); }
@@ -562,6 +672,22 @@ function AdminDash({ bookings, setBookings, clients, setClients, services, setSe
   function delExtra(id){ setConfirm({msg:"Delete this add-on?",action:()=>{setExtras(p=>p.filter(e=>e.id!==id));setConfirm(null);}}); }
   function saveCoupon(d){ if(d._edit) setCoupons(p=>p.map(c=>c.code===d._orig?{code:d.code,disc:Number(d.disc),active:d.active}:c)); else {if(coupons.find(c=>c.code===d.code)){alert("Code exists");return;} setCoupons(p=>[...p,{code:d.code.toUpperCase(),disc:Number(d.disc),active:true}]);} setCouponModal(null); }
   function delCoupon(code){ setConfirm({msg:`Delete coupon ${code}?`,action:()=>{setCoupons(p=>p.filter(c=>c.code!==code));setConfirm(null);}}); }
+
+  const NavContent = () => (
+    <>
+      <div style={{ padding:"0 20px 16px", borderBottom:`1px solid ${BORDER}`, marginBottom:12 }}>
+        <div style={{ fontSize:11, fontWeight:800, color:MUTED, textTransform:"uppercase", letterSpacing:1.5 }}>Navigation</div>
+      </div>
+      {TABS.map(({id,label,Icon})=>(
+        <div key={id} onClick={()=>{ setTab(id); setMenuOpen(false); }} style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 20px", cursor:"pointer", background:tab===id?LIGHT_BLUE:"transparent", color:tab===id?BLUE:MUTED, borderRight:tab===id?`3px solid ${BLUE}`:"3px solid transparent", fontWeight:tab===id?700:500, fontSize:14, marginBottom:2 }}>
+          <Icon size={18}/>{label}
+        </div>
+      ))}
+      <div style={{ padding:"16px 20px", borderTop:`1px solid ${BORDER}`, marginTop:16 }}>
+        <button onClick={onLogout} style={{ ...S.btn(WHITE,MUTED,BORDER), width:"100%", padding:"10px", fontSize:13 }}>Logout</button>
+      </div>
+    </>
+  );
 
   return (
     <div style={{ display:"flex", minHeight:"calc(100vh - 66px)" }}>
@@ -571,44 +697,49 @@ function AdminDash({ bookings, setBookings, clients, setClients, services, setSe
       {couponModal&&<Modal title={couponModal.mode==="add"?"Add Coupon":"Edit Coupon"} onClose={()=>setCouponModal(null)}><CouponForm data={couponModal.data} onSave={saveCoupon}/></Modal>}
       {clientModal&&<Modal title={clientModal.mode==="add"?"Add Client":"Edit Client"} onClose={()=>setClientModal(null)}><ClientForm data={clientModal.data} onSave={saveClient}/></Modal>}
 
-      {/* Sidebar nav */}
-      <div style={{ width:220, background:WHITE, borderRight:`1px solid ${BORDER}`, padding:"24px 0", flexShrink:0, position:"relative" }}>
-        <div style={{ padding:"0 20px 20px", borderBottom:`1px solid ${BORDER}`, marginBottom:16 }}>
-          <div style={{ fontSize:11, fontWeight:800, color:MUTED, textTransform:"uppercase", letterSpacing:1.5 }}>Navigation</div>
-        </div>
-        {TABS.map(({id,label,Icon})=>(
-          <div key={id} onClick={()=>setTab(id)} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", cursor:"pointer", background:tab===id?LIGHT_BLUE:"transparent", color:tab===id?BLUE:MUTED, borderRight:tab===id?`3px solid ${BLUE}`:"3px solid transparent", fontWeight:tab===id?700:500, fontSize:14, marginBottom:2 }}>
-            <Icon size={18}/>{label}
-          </div>
-        ))}
-        <div style={{ padding:"20px", position:"absolute", bottom:0, width:220, borderTop:`1px solid ${BORDER}` }}>
-          <button onClick={onLogout} style={{ ...S.btn(WHITE,MUTED,BORDER), width:"100%", padding:"10px", fontSize:13 }}>Logout</button>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div style={{ flex:1, overflowY:"auto", background:BG }}>
-        <div style={{ background:WHITE, borderBottom:`1px solid ${BORDER}`, padding:"20px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <div>
-            <h2 style={{ fontSize:20, fontWeight:900 }}>{TABS.find(t=>t.id===tab)?.label}</h2>
-            <p style={{ color:MUTED, fontSize:13, marginTop:2 }}>Yahweh Property Care — Control Panel</p>
+      {/* Mobile drawer */}
+      {mobile && menuOpen && (
+        <div style={{ position:"fixed", inset:0, zIndex:400 }}>
+          <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.4)" }} onClick={()=>setMenuOpen(false)}/>
+          <div style={{ position:"absolute", left:0, top:0, bottom:0, width:260, background:WHITE, overflowY:"auto", paddingTop:60 }}>
+            <NavContent/>
           </div>
         </div>
+      )}
 
-        <div style={{ padding:"24px 28px" }}>
+      {/* Desktop sidebar */}
+      {!mobile && (
+        <div style={{ width:220, background:WHITE, borderRight:`1px solid ${BORDER}`, padding:"24px 0", flexShrink:0, position:"relative" }}>
+          <NavContent/>
+        </div>
+      )}
+
+      {/* Main */}
+      <div style={{ flex:1, overflowY:"auto", background:BG, paddingBottom:mobile?70:0 }}>
+        <div style={{ background:WHITE, borderBottom:`1px solid ${BORDER}`, padding:mobile?"14px 16px":"20px 28px", display:"flex", justifyContent:"space-between", alignItems:"center", position:"sticky", top:0, zIndex:100 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            {mobile && <button onClick={()=>setMenuOpen(true)} style={{ background:"none", border:"none", cursor:"pointer", color:TEXT, display:"flex", alignItems:"center" }}><Icons.Menu/></button>}
+            <div>
+              <h2 style={{ fontSize:mobile?16:20, fontWeight:900 }}>{TABS.find(t=>t.id===tab)?.label}</h2>
+              {!mobile&&<p style={{ color:MUTED, fontSize:13, marginTop:2 }}>Yahweh Property Care</p>}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding:mobile?"12px 16px":"24px 28px" }}>
           {/* Stats */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14, marginBottom:28 }}>
+          <div style={{ display:"grid", gridTemplateColumns:mobile?"repeat(2,1fr)":"repeat(4,1fr)", gap:mobile?10:14, marginBottom:mobile?16:28 }}>
             {[
-              { icon:<Icons.ClipboardList size={22}/>, label:"Total Bookings", value:bookings.length, color:BLUE, bg:LIGHT_BLUE },
-              { icon:<Icons.DollarSign size={22}/>, label:"Revenue", value:"$"+revenue.toFixed(0), color:GREEN, bg:LIGHT_GREEN },
-              { icon:<Icons.Clock size={22}/>, label:"Pending", value:bookings.filter(b=>b.status==="Pending").length, color:"#e67e22", bg:"#fff8f0" },
-              { icon:<Icons.Users size={22}/>, label:"Clients", value:clients.length, color:BLUE, bg:LIGHT_BLUE },
-            ].map(({icon,label,value,color,bg})=>(
-              <div key={label} style={{ background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, padding:"20px", boxShadow:"0 2px 10px rgba(27,117,187,0.06)", display:"flex", alignItems:"center", gap:16 }}>
-                <div style={{ width:48, height:48, borderRadius:12, background:bg, display:"flex", alignItems:"center", justifyContent:"center", color, flexShrink:0 }}>{icon}</div>
+              { Icon:Icons.ClipboardList, label:"Bookings", value:bookings.length, color:BLUE, bg:LIGHT_BLUE },
+              { Icon:Icons.DollarSign, label:"Revenue", value:"$"+revenue.toFixed(0), color:GREEN, bg:LIGHT_GREEN },
+              { Icon:Icons.Clock, label:"Pending", value:bookings.filter(b=>b.status==="Pending").length, color:"#e67e22", bg:"#fff8f0" },
+              { Icon:Icons.Users, label:"Clients", value:clients.length, color:BLUE, bg:LIGHT_BLUE },
+            ].map(({Icon,label,value,color,bg})=>(
+              <div key={label} style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, padding:mobile?"14px":"20px", display:"flex", alignItems:"center", gap:12 }}>
+                <div style={{ width:mobile?40:48, height:mobile?40:48, borderRadius:10, background:bg, display:"flex", alignItems:"center", justifyContent:"center", color, flexShrink:0 }}><Icon size={mobile?18:22}/></div>
                 <div>
-                  <div style={{ fontSize:24, fontWeight:900, color, lineHeight:1 }}>{value}</div>
-                  <div style={{ fontSize:12, color:MUTED, marginTop:4 }}>{label}</div>
+                  <div style={{ fontSize:mobile?20:24, fontWeight:900, color, lineHeight:1 }}>{value}</div>
+                  <div style={{ fontSize:mobile?11:12, color:MUTED, marginTop:3 }}>{label}</div>
                 </div>
               </div>
             ))}
@@ -616,56 +747,41 @@ function AdminDash({ bookings, setBookings, clients, setClients, services, setSe
 
           {/* BOOKINGS */}
           {tab==="bookings"&&<>
-            <div style={{ display:"flex", gap:10, marginBottom:18, flexWrap:"wrap", alignItems:"center", justifyContent:"space-between" }}>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search bookings…" style={{ ...S.inp, width:280, padding:"10px 14px" }}/>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {["All","Pending","Confirmed","Completed","Cancelled"].map(s=>{
-                  const a=filter===s; const col=SC[s]||BLUE;
-                  return <button key={s} onClick={()=>setFilter(s)} style={{ background:a?col:WHITE, color:a?WHITE:MUTED, border:`1.5px solid ${a?col:BORDER}`, borderRadius:50, padding:"8px 18px", fontSize:12, fontWeight:700, cursor:"pointer" }}>{s}</button>;
-                })}
-              </div>
+            <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap" }}>
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search…" style={{ ...S.inp, flex:1, minWidth:150, padding:"10px 14px" }}/>
             </div>
-            {filtBks.length===0&&<div style={{ background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, padding:"48px", color:MUTED, textAlign:"center" }}>No bookings found.</div>}
-            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            <div style={{ display:"flex", gap:6, marginBottom:14, overflowX:"auto", paddingBottom:4 }}>
+              {["All","Pending","Confirmed","Completed","Cancelled"].map(s=>{
+                const a=filter===s; const col=SC[s]||BLUE;
+                return <button key={s} onClick={()=>setFilter(s)} style={{ background:a?col:WHITE, color:a?WHITE:MUTED, border:`1.5px solid ${a?col:BORDER}`, borderRadius:50, padding:"7px 14px", fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>{s}</button>;
+              })}
+            </div>
+            {filtBks.length===0&&<div style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, padding:"32px", color:MUTED, textAlign:"center" }}>No bookings found.</div>}
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
               {filtBks.map(b=>(
-                <div key={b.id} style={{ background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, boxShadow:"0 2px 10px rgba(27,117,187,0.05)", overflow:"hidden" }}>
-                  <div style={{ padding:"12px 20px", borderBottom:`1px solid ${BORDER}`, display:"flex", justifyContent:"space-between", alignItems:"center", background:BG }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                      <span style={{ background:LIGHT_BLUE, color:BLUE, borderRadius:7, padding:"4px 12px", fontSize:12, fontWeight:900, letterSpacing:1 }}>{b.id}</span>
+                <div key={b.id} style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, overflow:"hidden" }}>
+                  <div style={{ padding:"10px 14px", borderBottom:`1px solid ${BORDER}`, display:"flex", justifyContent:"space-between", alignItems:"center", background:BG }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ background:LIGHT_BLUE, color:BLUE, borderRadius:6, padding:"3px 10px", fontSize:11, fontWeight:900 }}>{b.id}</span>
                       <StatusTag s={b.status}/>
                     </div>
-                    <div style={{ display:"flex", gap:16 }}>
-                      <span style={{ fontSize:12, color:MUTED, display:"flex", alignItems:"center", gap:5 }}><Icons.Calendar size={13}/>{b.date}</span>
-                      <span style={{ fontSize:12, color:MUTED, display:"flex", alignItems:"center", gap:5 }}><Icons.Clock size={13}/>{b.time}</span>
-                    </div>
+                    <span style={{ fontSize:11, color:MUTED }}>{b.date}</span>
                   </div>
-                  <div style={{ padding:"16px 20px", display:"grid", gridTemplateColumns:"1fr 1.2fr 0.8fr auto", gap:20, alignItems:"center" }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                      <Avatar name={b.clientName} size={40}/>
+                  <div style={{ padding:"14px" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                      <Avatar name={b.clientName} size={36}/>
                       <div>
                         <div style={{ fontWeight:800, fontSize:14 }}>{b.service}</div>
-                        <div style={{ fontSize:12, color:MUTED }}>{b.clientName||"Guest"}</div>
-                        <div style={{ fontSize:11, color:MUTED }}>{b.clientEmail}</div>
+                        <div style={{ fontSize:12, color:MUTED }}>{b.clientName||"Guest"} · {b.time}</div>
                       </div>
+                      <div style={{ marginLeft:"auto", fontWeight:900, fontSize:18, color:BLUE }}>${b.total.toFixed(2)}</div>
                     </div>
-                    <div style={{ display:"flex", gap:8 }}>
-                      <span style={{ color:MUTED, marginTop:2 }}><Icons.MapPin size={13}/></span>
-                      <div>
-                        <div style={{ fontSize:13, fontWeight:500, lineHeight:1.4 }}>{b.address}</div>
-                        <div style={{ fontSize:12, color:MUTED }}>{b.freq}</div>
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize:24, fontWeight:900, color:BLUE }}>${b.total.toFixed(2)}</div>
-                      <div style={{ fontSize:11, color:MUTED }}>Total charged</div>
-                    </div>
-                    <div style={{ display:"flex", flexDirection:"column", gap:8, alignItems:"flex-end" }}>
-                      <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"flex-end" }}>
-                        {["Confirmed","Completed","Cancelled"].filter(s=>s!==b.status).map(s=>(
-                          <button key={s} onClick={()=>updBk(b.id,s)} style={{ background:STATUS_CONFIG[s]?.bg||BG, color:STATUS_CONFIG[s]?.color||MUTED, border:`1.5px solid ${STATUS_CONFIG[s]?.color||MUTED}33`, borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>→ {s}</button>
-                        ))}
-                      </div>
-                      <button onClick={()=>delBk(b.id)} style={{ background:"#fdecea", color:"#e74c3c", border:"1.5px solid #f5c6cb", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:5 }}><Icons.Trash size={13}/> Delete</button>
+                    <div style={{ fontSize:12, color:MUTED, marginBottom:12 }}>{b.address}</div>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                      {["Confirmed","Completed","Cancelled"].filter(s=>s!==b.status).map(s=>(
+                        <button key={s} onClick={()=>updBk(b.id,s)} style={{ background:STATUS_CONFIG[s]?.bg||BG, color:STATUS_CONFIG[s]?.color||MUTED, border:`1px solid ${STATUS_CONFIG[s]?.color||MUTED}33`, borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:700, cursor:"pointer" }}>→ {s}</button>
+                      ))}
+                      <button onClick={()=>delBk(b.id)} style={{ background:"#fdecea", color:"#e74c3c", border:"1px solid #f5c6cb", borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}><Icons.Trash size={12}/> Del</button>
                     </div>
                   </div>
                 </div>
@@ -675,33 +791,37 @@ function AdminDash({ bookings, setBookings, clients, setClients, services, setSe
 
           {/* CLIENTS */}
           {tab==="clients"&&<>
-            <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:16 }}>
+            <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:14 }}>
               <button style={{ ...S.btn(BLUE,WHITE), display:"flex", alignItems:"center", gap:6 }} onClick={()=>setClientModal({mode:"add",data:{name:"",email:"",phone:"",password:""}})}>
                 <Icons.Plus/> Add Client
               </button>
             </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
               {clients.map(c=>{
                 const cbks=bookings.filter(b=>b.clientId===c.id);
                 return (
-                  <div key={c.id} style={{ background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, padding:"18px 24px", display:"flex", alignItems:"center", gap:20, boxShadow:"0 2px 10px rgba(27,117,187,0.05)" }}>
-                    <Avatar name={c.name} size={48}/>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontWeight:800, fontSize:15 }}>{c.name}</div>
-                      <div style={{ fontSize:13, color:MUTED }}>{c.email}</div>
-                      <div style={{ fontSize:12, color:MUTED }}>{c.phone}</div>
+                  <div key={c.id} style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, padding:"14px" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:10 }}>
+                      <Avatar name={c.name} size={44}/>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontWeight:800, fontSize:14 }}>{c.name}</div>
+                        <div style={{ fontSize:12, color:MUTED }}>{c.email}</div>
+                        <div style={{ fontSize:12, color:MUTED }}>{c.phone}</div>
+                      </div>
                     </div>
-                    <div style={{ textAlign:"center", padding:"0 20px", borderLeft:`1px solid ${BORDER}`, borderRight:`1px solid ${BORDER}` }}>
-                      <div style={{ fontSize:22, fontWeight:900, color:BLUE }}>{cbks.length}</div>
-                      <div style={{ fontSize:11, color:MUTED }}>Bookings</div>
-                    </div>
-                    <div style={{ textAlign:"center", padding:"0 20px", borderRight:`1px solid ${BORDER}` }}>
-                      <div style={{ fontSize:22, fontWeight:900, color:GREEN }}>${cbks.reduce((s,b)=>s+b.total,0).toFixed(0)}</div>
-                      <div style={{ fontSize:11, color:MUTED }}>Revenue</div>
+                    <div style={{ display:"flex", gap:10, marginBottom:12 }}>
+                      <div style={{ flex:1, background:BG, borderRadius:10, padding:"10px", textAlign:"center" }}>
+                        <div style={{ fontSize:20, fontWeight:900, color:BLUE }}>{cbks.length}</div>
+                        <div style={{ fontSize:11, color:MUTED }}>Bookings</div>
+                      </div>
+                      <div style={{ flex:1, background:BG, borderRadius:10, padding:"10px", textAlign:"center" }}>
+                        <div style={{ fontSize:20, fontWeight:900, color:GREEN }}>${cbks.reduce((s,b)=>s+b.total,0).toFixed(0)}</div>
+                        <div style={{ fontSize:11, color:MUTED }}>Revenue</div>
+                      </div>
                     </div>
                     <div style={{ display:"flex", gap:8 }}>
-                      <button onClick={()=>setClientModal({mode:"edit",data:{...c}})} style={{ background:LIGHT_BLUE, color:BLUE, border:`1px solid ${BLUE}22`, borderRadius:9, padding:"9px 16px", cursor:"pointer", display:"flex", alignItems:"center", gap:6, fontWeight:700, fontSize:13 }}><Icons.Edit/> Edit</button>
-                      <button onClick={()=>delClient(c.id)} style={{ background:"#fdecea", color:"#e74c3c", border:"1px solid #f5c6cb", borderRadius:9, padding:"9px 16px", cursor:"pointer", display:"flex", alignItems:"center", gap:6, fontWeight:700, fontSize:13 }}><Icons.Trash/> Delete</button>
+                      <button onClick={()=>setClientModal({mode:"edit",data:{...c}})} style={{ ...S.btn(LIGHT_BLUE,BLUE), flex:1, padding:"9px", fontSize:13, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}><Icons.Edit/> Edit</button>
+                      <button onClick={()=>delClient(c.id)} style={{ ...S.btn("#fdecea","#e74c3c"), flex:1, padding:"9px", fontSize:13, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}><Icons.Trash/> Delete</button>
                     </div>
                   </div>
                 );
@@ -711,27 +831,25 @@ function AdminDash({ bookings, setBookings, clients, setClients, services, setSe
 
           {/* SERVICES */}
           {tab==="services"&&<>
-            <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:16 }}>
+            <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:14 }}>
               <button style={{ ...S.btn(BLUE,WHITE), display:"flex", alignItems:"center", gap:6 }} onClick={()=>setSvcModal({mode:"add",data:{name:"",base:100,hasRooms:false}})}>
                 <Icons.Plus/> Add Service
               </button>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:14 }}>
+            <div style={{ display:"grid", gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(240px,1fr))", gap:12 }}>
               {services.map(svc=>(
-                <div key={svc.id} style={{ background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, overflow:"hidden", boxShadow:"0 2px 10px rgba(27,117,187,0.05)" }}>
-                  <div style={{ background:`linear-gradient(135deg,${LIGHT_BLUE},${WHITE})`, padding:"24px", borderBottom:`1px solid ${BORDER}`, display:"flex", alignItems:"center", gap:16 }}>
-                    <div style={{ width:52, height:52, background:WHITE, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", color:BLUE, boxShadow:"0 2px 8px rgba(27,117,187,0.15)" }}><svc.Icon size={28}/></div>
+                <div key={svc.id} style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, overflow:"hidden" }}>
+                  <div style={{ background:`linear-gradient(135deg,${LIGHT_BLUE},${WHITE})`, padding:"18px", borderBottom:`1px solid ${BORDER}`, display:"flex", alignItems:"center", gap:14 }}>
+                    <div style={{ width:48, height:48, background:WHITE, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", color:BLUE, boxShadow:"0 2px 8px rgba(27,117,187,0.15)", flexShrink:0 }}><svc.Icon size={26}/></div>
                     <div>
                       <div style={{ fontWeight:800, fontSize:15 }}>{svc.name}</div>
-                      <div style={{ color:GREEN, fontWeight:800, fontSize:18, marginTop:2 }}>from ${svc.base}</div>
+                      <div style={{ color:GREEN, fontWeight:800, fontSize:17, marginTop:2 }}>from ${svc.base}</div>
+                      <span style={{ fontSize:11, color:MUTED, background:BG, borderRadius:50, padding:"2px 10px", border:`1px solid ${BORDER}` }}>{svc.hasRooms?"Room-based":"Flat rate"}</span>
                     </div>
                   </div>
-                  <div style={{ padding:"14px 20px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                    <span style={{ fontSize:12, color:MUTED, background:BG, borderRadius:50, padding:"3px 12px", border:`1px solid ${BORDER}` }}>{svc.hasRooms?"Room-based":"Flat rate"}</span>
-                    <div style={{ display:"flex", gap:6 }}>
-                      <button onClick={()=>setSvcModal({mode:"edit",data:{...svc}})} style={{ background:LIGHT_BLUE, color:BLUE, border:"none", borderRadius:8, padding:"7px 12px", cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontWeight:700, fontSize:12 }}><Icons.Edit/> Edit</button>
-                      <button onClick={()=>delSvc(svc.id)} style={{ background:"#fdecea", color:"#e74c3c", border:"none", borderRadius:8, padding:"7px 12px", cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontWeight:700, fontSize:12 }}><Icons.Trash/> Del</button>
-                    </div>
+                  <div style={{ padding:"12px 14px", display:"flex", gap:8 }}>
+                    <button onClick={()=>setSvcModal({mode:"edit",data:{...svc}})} style={{ ...S.btn(LIGHT_BLUE,BLUE), flex:1, padding:"9px", fontSize:13, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}><Icons.Edit/> Edit</button>
+                    <button onClick={()=>delSvc(svc.id)} style={{ ...S.btn("#fdecea","#e74c3c"), flex:1, padding:"9px", fontSize:13, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}><Icons.Trash/> Delete</button>
                   </div>
                 </div>
               ))}
@@ -740,24 +858,24 @@ function AdminDash({ bookings, setBookings, clients, setClients, services, setSe
 
           {/* EXTRAS */}
           {tab==="extras"&&<>
-            <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:16 }}>
+            <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:14 }}>
               <button style={{ ...S.btn(BLUE,WHITE), display:"flex", alignItems:"center", gap:6 }} onClick={()=>setExtraModal({mode:"add",data:{name:"",price:50}})}>
                 <Icons.Plus/> Add Add-on
               </button>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:14 }}>
+            <div style={{ display:"grid", gridTemplateColumns:mobile?"1fr 1fr":"repeat(auto-fill,minmax(220px,1fr))", gap:12 }}>
               {extras.map(ex=>(
-                <div key={ex.id} style={{ background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, overflow:"hidden", boxShadow:"0 2px 10px rgba(27,117,187,0.05)" }}>
-                  <div style={{ background:`linear-gradient(135deg,${LIGHT_GREEN},${WHITE})`, padding:"22px", borderBottom:`1px solid ${BORDER}`, display:"flex", alignItems:"center", gap:14 }}>
-                    <div style={{ width:48, height:48, background:WHITE, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", color:GREEN, boxShadow:"0 2px 8px rgba(126,184,66,0.15)" }}><ex.Icon/></div>
+                <div key={ex.id} style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, overflow:"hidden" }}>
+                  <div style={{ background:`linear-gradient(135deg,${LIGHT_GREEN},${WHITE})`, padding:"16px", borderBottom:`1px solid ${BORDER}`, display:"flex", alignItems:"center", gap:12 }}>
+                    <div style={{ width:44, height:44, background:WHITE, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", color:GREEN, boxShadow:"0 2px 8px rgba(126,184,66,0.15)", flexShrink:0 }}><ex.Icon size={22}/></div>
                     <div>
-                      <div style={{ fontWeight:800, fontSize:14 }}>{ex.name}</div>
-                      <div style={{ color:GREEN, fontWeight:900, fontSize:20, marginTop:2 }}>+${ex.price}</div>
+                      <div style={{ fontWeight:800, fontSize:13 }}>{ex.name}</div>
+                      <div style={{ color:GREEN, fontWeight:900, fontSize:18 }}>+${ex.price}</div>
                     </div>
                   </div>
-                  <div style={{ padding:"12px 16px", display:"flex", gap:8 }}>
-                    <button onClick={()=>setExtraModal({mode:"edit",data:{...ex}})} style={{ ...S.btn(LIGHT_BLUE,BLUE), flex:1, padding:"8px", fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}><Icons.Edit/> Edit</button>
-                    <button onClick={()=>delExtra(ex.id)} style={{ ...S.btn("#fdecea","#e74c3c"), flex:1, padding:"8px", fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}><Icons.Trash/> Delete</button>
+                  <div style={{ padding:"10px 12px", display:"flex", gap:6 }}>
+                    <button onClick={()=>setExtraModal({mode:"edit",data:{...ex}})} style={{ ...S.btn(LIGHT_BLUE,BLUE), flex:1, padding:"8px", fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", gap:3 }}><Icons.Edit size={12}/> Edit</button>
+                    <button onClick={()=>delExtra(ex.id)} style={{ ...S.btn("#fdecea","#e74c3c"), flex:1, padding:"8px", fontSize:12, display:"flex", alignItems:"center", justifyContent:"center", gap:3 }}><Icons.Trash size={12}/> Del</button>
                   </div>
                 </div>
               ))}
@@ -766,30 +884,28 @@ function AdminDash({ bookings, setBookings, clients, setClients, services, setSe
 
           {/* COUPONS */}
           {tab==="coupons"&&<>
-            <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:16 }}>
+            <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:14 }}>
               <button style={{ ...S.btn(BLUE,WHITE), display:"flex", alignItems:"center", gap:6 }} onClick={()=>setCouponModal({mode:"add",data:{code:"",disc:10}})}>
                 <Icons.Plus/> Add Coupon
               </button>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:14 }}>
+            <div style={{ display:"grid", gridTemplateColumns:mobile?"1fr":"repeat(auto-fill,minmax(260px,1fr))", gap:12 }}>
               {coupons.map(c=>(
-                <div key={c.code} style={{ background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, overflow:"hidden", boxShadow:"0 2px 10px rgba(27,117,187,0.05)" }}>
-                  <div style={{ background:c.active?`linear-gradient(135deg,${LIGHT_BLUE},${WHITE})`:"#fafafa", padding:"22px 24px", borderBottom:`1px solid ${BORDER}` }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                      <div>
-                        <div style={{ fontWeight:900, color:c.active?BLUE:MUTED, fontSize:22, letterSpacing:2, marginBottom:6 }}>{c.code}</div>
-                        <div style={{ fontSize:28, fontWeight:900, color:c.active?GREEN:MUTED }}>{c.disc}% off</div>
-                      </div>
-                      <div style={{ width:44, height:44, background:c.active?LIGHT_BLUE:"#f0f0f0", borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", color:c.active?BLUE:MUTED }}><Icons.Tag size={20}/></div>
+                <div key={c.code} style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, overflow:"hidden" }}>
+                  <div style={{ background:c.active?`linear-gradient(135deg,${LIGHT_BLUE},${WHITE})`:"#fafafa", padding:"20px", borderBottom:`1px solid ${BORDER}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div>
+                      <div style={{ fontWeight:900, color:c.active?BLUE:MUTED, fontSize:20, letterSpacing:2, marginBottom:4 }}>{c.code}</div>
+                      <div style={{ fontSize:26, fontWeight:900, color:c.active?GREEN:MUTED }}>{c.disc}% off</div>
                     </div>
+                    <div style={{ width:44, height:44, background:c.active?LIGHT_BLUE:"#f0f0f0", borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", color:c.active?BLUE:MUTED }}><Icons.Tag size={20}/></div>
                   </div>
-                  <div style={{ padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
-                    <button onClick={()=>setCoupons(p=>p.map(x=>x.code===c.code?{...x,active:!x.active}:x))} style={{ background:c.active?LIGHT_GREEN:"#fdecea", color:c.active?GREEN:"#e74c3c", border:`1px solid ${c.active?GREEN+"33":"#f5c6cb"}`, borderRadius:50, padding:"6px 16px", fontSize:12, fontWeight:800, cursor:"pointer" }}>
+                  <div style={{ padding:"12px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+                    <button onClick={()=>setCoupons(p=>p.map(x=>x.code===c.code?{...x,active:!x.active}:x))} style={{ background:c.active?LIGHT_GREEN:"#fdecea", color:c.active?GREEN:"#e74c3c", border:`1px solid ${c.active?GREEN+"33":"#f5c6cb"}`, borderRadius:50, padding:"6px 14px", fontSize:12, fontWeight:800, cursor:"pointer" }}>
                       {c.active?"● Active":"○ Inactive"}
                     </button>
                     <div style={{ display:"flex", gap:6 }}>
-                      <button onClick={()=>setCouponModal({mode:"edit",data:{code:c.code,disc:c.disc,active:c.active,_edit:true,_orig:c.code}})} style={{ background:LIGHT_BLUE, color:BLUE, border:"none", borderRadius:8, padding:"7px 12px", cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontWeight:700, fontSize:12 }}><Icons.Edit/> Edit</button>
-                      <button onClick={()=>delCoupon(c.code)} style={{ background:"#fdecea", color:"#e74c3c", border:"none", borderRadius:8, padding:"7px 12px", cursor:"pointer", display:"flex", alignItems:"center" }}><Icons.Trash/></button>
+                      <button onClick={()=>setCouponModal({mode:"edit",data:{code:c.code,disc:c.disc,active:c.active,_edit:true,_orig:c.code}})} style={{ background:LIGHT_BLUE, color:BLUE, border:"none", borderRadius:8, padding:"7px 10px", cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontWeight:700, fontSize:12 }}><Icons.Edit/> Edit</button>
+                      <button onClick={()=>delCoupon(c.code)} style={{ background:"#fdecea", color:"#e74c3c", border:"none", borderRadius:8, padding:"7px 10px", cursor:"pointer", display:"flex", alignItems:"center" }}><Icons.Trash/></button>
                     </div>
                   </div>
                 </div>
@@ -802,6 +918,7 @@ function AdminDash({ bookings, setBookings, clients, setClients, services, setSe
   );
 }
 
+// ── FORMS ──
 function SvcForm({ data, onSave }) {
   const [f,setF]=useState({...data});
   const set=k=>e=>setF(p=>({...p,[k]:e.target.value}));
@@ -816,7 +933,7 @@ function SvcForm({ data, onSave }) {
         ))}
       </div>
     </div>
-    <button style={{ ...S.btn(BLUE,WHITE), width:"100%" }} onClick={()=>onSave(f)}>Save Service</button>
+    <button style={{ ...S.btn(BLUE,WHITE), width:"100%", padding:"14px" }} onClick={()=>onSave(f)}>Save Service</button>
   </>;
 }
 
@@ -827,7 +944,7 @@ function ExtraForm({ data, onSave }) {
     {[["Add-on Name","name","text","e.g. Steam Cleaning"],["Price ($)","price","number","50"]].map(([l,k,t,p])=>(
       <div key={k} style={{ marginBottom:14 }}><div style={S.sLbl}>{l}</div><input type={t} value={f[k]||""} onChange={set(k)} placeholder={p} style={S.inp}/></div>
     ))}
-    <button style={{ ...S.btn(BLUE,WHITE), width:"100%", marginTop:6 }} onClick={()=>onSave(f)}>Save Add-on</button>
+    <button style={{ ...S.btn(BLUE,WHITE), width:"100%", padding:"14px", marginTop:6 }} onClick={()=>onSave(f)}>Save Add-on</button>
   </>;
 }
 
@@ -837,7 +954,7 @@ function CouponForm({ data, onSave }) {
   return <>
     <div style={{ marginBottom:14 }}><div style={S.sLbl}>Coupon Code</div><input value={f.code||""} onChange={e=>setF(p=>({...p,code:e.target.value.toUpperCase()}))} placeholder="e.g. SAVE20" style={S.inp}/></div>
     <div style={{ marginBottom:20 }}><div style={S.sLbl}>Discount (%)</div><input type="number" min={1} max={100} value={f.disc||""} onChange={set("disc")} placeholder="10" style={S.inp}/></div>
-    <button style={{ ...S.btn(BLUE,WHITE), width:"100%" }} onClick={()=>onSave(f)}>Save Coupon</button>
+    <button style={{ ...S.btn(BLUE,WHITE), width:"100%", padding:"14px" }} onClick={()=>onSave(f)}>Save Coupon</button>
   </>;
 }
 
@@ -848,55 +965,59 @@ function ClientForm({ data, onSave }) {
     {[["Full Name","name","text","Jane Smith"],["Email","email","email","jane@example.com"],["Phone","phone","tel","04XX XXX XXX"],["Password","password","text","pass123"]].map(([l,k,t,p])=>(
       <div key={k} style={{ marginBottom:14 }}><div style={S.sLbl}>{l}</div><input type={t} value={f[k]||""} onChange={set(k)} placeholder={p} style={S.inp}/></div>
     ))}
-    <button style={{ ...S.btn(BLUE,WHITE), width:"100%", marginTop:6 }} onClick={()=>onSave(f)}>Save Client</button>
+    <button style={{ ...S.btn(BLUE,WHITE), width:"100%", padding:"14px", marginTop:6 }} onClick={()=>onSave(f)}>Save Client</button>
   </>;
 }
 
+// ── AUTH ──
 function LoginScreen({ clients, onLogin, onAdmin, onGuest }) {
+  const mobile = useIsMobile();
   const [email,setEmail]=useState("");
   const [pass,setPass]=useState("");
   const [err,setErr]=useState("");
   function tryLogin(){ const u=clients.find(c=>c.email===email&&c.password===pass); if(u) onLogin(u); else setErr("Invalid credentials. Try sarah@example.com / pass123"); }
   return (
-    <div style={{ maxWidth:420, margin:"56px auto", padding:"0 16px" }}>
-      <div style={{ background:WHITE, borderRadius:18, border:`1px solid ${BORDER}`, padding:36, boxShadow:"0 8px 40px rgba(27,117,187,0.10)" }}>
-        <div style={{ textAlign:"center", marginBottom:28 }}><Logo/><p style={{ color:MUTED, fontSize:14, marginTop:12 }}>Sign in to manage your bookings</p></div>
+    <div style={{ maxWidth:420, margin:mobile?"0 auto":"56px auto", padding:mobile?"16px":"0 16px" }}>
+      <div style={{ background:WHITE, borderRadius:mobile?16:18, border:`1px solid ${BORDER}`, padding:mobile?"24px 20px":"36px", boxShadow:"0 8px 40px rgba(27,117,187,0.10)", marginTop:mobile?8:0 }}>
+        <div style={{ textAlign:"center", marginBottom:24 }}>
+          <div style={{ display:"flex", justifyContent:"center" }}><Logo/></div>
+          <p style={{ color:MUTED, fontSize:14, marginTop:12 }}>Sign in to manage your bookings</p>
+        </div>
         {[["Email","email","email","you@example.com",setEmail,email],["Password","pass","password","••••••••",setPass,pass]].map(([l,id,t,p,fn,v])=>(
           <div key={id} style={{ marginBottom:16 }}><div style={S.sLbl}>{l}</div><input type={t} value={v} onChange={e=>fn(e.target.value)} placeholder={p} style={S.inp} onKeyDown={e=>e.key==="Enter"&&tryLogin()}/></div>
         ))}
         {err&&<div style={{ background:"#fdecea", border:"1px solid #f5c6cb", borderRadius:9, padding:"10px 14px", color:"#c0392b", fontSize:13, marginBottom:14 }}>{err}</div>}
-        <button style={{ ...S.btn(BLUE,WHITE), width:"100%", marginBottom:12, fontSize:15 }} onClick={tryLogin}>Sign In</button>
-        <button style={{ ...S.btn(WHITE,BLUE,BLUE), width:"100%", marginBottom:16 }} onClick={onGuest}>Continue as Guest</button>
-        <hr style={{ border:"none", borderTop:`1px solid ${BORDER}`, margin:"16px 0" }}/>
-        <button onClick={onAdmin} style={{ width:"100%", background:BG, color:MUTED, border:`1px solid ${BORDER}`, borderRadius:9, padding:"11px", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+        <button style={{ ...S.btn(BLUE,WHITE), width:"100%", marginBottom:12, fontSize:15, padding:"14px" }} onClick={tryLogin}>Sign In</button>
+        <button style={{ ...S.btn(WHITE,BLUE,BLUE), width:"100%", marginBottom:14, padding:"14px" }} onClick={onGuest}>Continue as Guest</button>
+        <hr style={{ border:"none", borderTop:`1px solid ${BORDER}`, margin:"14px 0" }}/>
+        <button onClick={onAdmin} style={{ width:"100%", background:BG, color:MUTED, border:`1px solid ${BORDER}`, borderRadius:9, padding:"12px", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
           <Icons.Shield size={14}/> Admin Login
         </button>
-        <p style={{ textAlign:"center", fontSize:12, color:MUTED, marginTop:16 }}>Demo: sarah@example.com / pass123</p>
+        <p style={{ textAlign:"center", fontSize:12, color:MUTED, marginTop:14 }}>Demo: sarah@example.com / pass123</p>
       </div>
     </div>
   );
 }
 
 function AdminLogin({ onLogin, onBack }) {
+  const mobile = useIsMobile();
   const [pass,setPass]=useState("");
   const [err,setErr]=useState("");
   function tryLogin() {
     if (pass==="admin123") {
       sessionStorage.setItem("isAdmin","true");
       onLogin();
-    } else {
-      setErr("Wrong password. Try: admin123");
-    }
+    } else setErr("Wrong password. Try: admin123");
   }
   return (
-    <div style={{ maxWidth:360, margin:"56px auto", padding:"0 16px" }}>
-      <div style={{ background:WHITE, borderRadius:18, border:`1px solid ${BORDER}`, padding:36, textAlign:"center", boxShadow:"0 8px 40px rgba(27,117,187,0.10)" }}>
+    <div style={{ maxWidth:360, margin:mobile?"0 auto":"56px auto", padding:mobile?"16px":"0 16px" }}>
+      <div style={{ background:WHITE, borderRadius:mobile?16:18, border:`1px solid ${BORDER}`, padding:mobile?"24px 20px":"36px", textAlign:"center", boxShadow:"0 8px 40px rgba(27,117,187,0.10)", marginTop:mobile?8:0 }}>
         <div style={{ width:72, height:72, background:LIGHT_BLUE, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}><Icons.Lock size={36}/></div>
         <h2 style={{ fontWeight:900, fontSize:20, color:BLUE, marginBottom:20 }}>Admin Access</h2>
         <div style={{ textAlign:"left", marginBottom:16 }}><div style={S.sLbl}>Admin Password</div><input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" style={S.inp} onKeyDown={e=>e.key==="Enter"&&tryLogin()}/></div>
         {err&&<div style={{ color:"#e74c3c", fontSize:13, marginBottom:12 }}>{err}</div>}
-        <button style={{ ...S.btn(BLUE,WHITE), width:"100%", marginBottom:10 }} onClick={tryLogin}>Access Dashboard</button>
-        <button style={{ ...S.btn(WHITE,BLUE,BLUE), width:"100%" }} onClick={onBack}>← Back</button>
+        <button style={{ ...S.btn(BLUE,WHITE), width:"100%", marginBottom:10, padding:"14px" }} onClick={tryLogin}>Access Dashboard</button>
+        <button style={{ ...S.btn(WHITE,BLUE,BLUE), width:"100%", padding:"14px" }} onClick={onBack}>← Back</button>
         <p style={{ fontSize:12, color:MUTED, marginTop:14 }}>Demo password: admin123</p>
       </div>
     </div>
@@ -912,7 +1033,10 @@ function AdminRoute({ isAdmin, children }) {
 }
 
 export default function App() {
-  const [user, setUser] = useState(null);
+  const mobile = useIsMobile();
+  const [user, setUser] = useState(()=>{
+    try { const u=sessionStorage.getItem("user"); return u?JSON.parse(u):null; } catch(e){ return null; }
+  });
   const [isAdmin, setIsAdmin] = useState(sessionStorage.getItem("isAdmin")==="true");
   const [bookings, setBookings] = useState(DEF_BOOKINGS);
   const [clients, setClients] = useState(DEF_CLIENTS);
@@ -923,27 +1047,33 @@ export default function App() {
   return (
     <BrowserRouter>
       <div style={{ fontFamily:"'Segoe UI',system-ui,sans-serif", background:BG, minHeight:"100vh", color:TEXT }}>
-        <header style={{ background:WHITE, borderBottom:`1px solid ${BORDER}`, padding:"0 28px", display:"flex", alignItems:"center", justifyContent:"space-between", height:66, position:"sticky", top:0, zIndex:200, boxShadow:"0 2px 12px rgba(27,117,187,0.06)" }}>
-          <div onClick={()=>window.location.href="/"} style={{ cursor:"pointer" }}><Logo/></div>
-          <nav style={{ display:"flex", alignItems:"center", gap:12 }}>
-            {user&&<button onClick={()=>window.location.href="/client"} style={{ background:"none", border:"none", color:MUTED, fontSize:13, cursor:"pointer", fontWeight:600, display:"flex", alignItems:"center", gap:5 }}><Icons.User size={14}/> My Bookings</button>}
-            <button style={{ ...S.btn(GREEN,WHITE), display:"flex", alignItems:"center", gap:6 }} onClick={()=>window.location.href="/book"}><Icons.Plus size={13}/> Book a Clean</button>
-            {!user&&!isAdmin&&<button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>window.location.href="/login"}>Login</button>}
-            {user&&<button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>{setUser(null);window.location.href="/login";}}>Logout</button>}
-            {isAdmin&&<button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>{setIsAdmin(false);sessionStorage.removeItem("isAdmin");window.location.href="/login";}}>Admin Logout</button>}
-            <a href="tel:1300925355" style={{ color:GREEN, fontWeight:800, textDecoration:"none", fontSize:14, display:"flex", alignItems:"center", gap:5 }}><Icons.Phone size={14}/> 1300 925 355</a>
+        {/* Header */}
+        <header style={{ background:WHITE, borderBottom:`1px solid ${BORDER}`, padding:mobile?"0 16px":"0 28px", display:"flex", alignItems:"center", justifyContent:"space-between", height:mobile?56:66, position:"sticky", top:0, zIndex:200, boxShadow:"0 2px 12px rgba(27,117,187,0.06)" }}>
+          <div onClick={()=>window.location.href="/"} style={{ cursor:"pointer" }}><Logo small={mobile}/></div>
+          <nav style={{ display:"flex", alignItems:"center", gap:mobile?8:12 }}>
+            {!mobile && <>
+              {user&&<button onClick={()=>window.location.href="/client"} style={{ background:"none", border:"none", color:MUTED, fontSize:13, cursor:"pointer", fontWeight:600, display:"flex", alignItems:"center", gap:5 }}><Icons.User size={14}/> My Bookings</button>}
+              <button style={{ ...S.btn(GREEN,WHITE), display:"flex", alignItems:"center", gap:6 }} onClick={()=>window.location.href="/book"}><Icons.Plus size={13}/> Book a Clean</button>
+              {!user&&!isAdmin&&<button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>window.location.href="/login"}>Login</button>}
+              {user&&<button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>{setUser(null);sessionStorage.removeItem("user");window.location.href="/login";}}>Logout</button>}
+              {isAdmin&&<button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>{setIsAdmin(false);sessionStorage.removeItem("isAdmin");window.location.href="/login";}}>Admin Logout</button>}
+            </>}
+            <a href="tel:1300925355" style={{ color:GREEN, fontWeight:800, textDecoration:"none", fontSize:mobile?13:14, display:"flex", alignItems:"center", gap:4 }}><Icons.Phone size={14}/>{!mobile&&" 1300 925 355"}</a>
           </nav>
         </header>
 
         <Routes>
-          <Route path="/login" element={<LoginScreen clients={clients} onLogin={u=>{setUser(u);window.location.href="/client";}} onAdmin={()=>window.location.href="/admin-login"} onGuest={()=>window.location.href="/book"}/>}/>
+          <Route path="/login" element={<LoginScreen clients={clients} onLogin={u=>{setUser(u);sessionStorage.setItem("user",JSON.stringify(u));window.location.href="/client";}} onAdmin={()=>window.location.href="/admin-login"} onGuest={()=>window.location.href="/book"}/>}/>
           <Route path="/admin-login" element={<AdminLogin onLogin={()=>{setIsAdmin(true);window.location.href="/admin";}} onBack={()=>window.location.href="/login"}/>}/>
           <Route path="/book" element={<BookingApp user={user} services={services} extras={extras} coupons={coupons} onComplete={nb=>setBookings(p=>[...p,nb])}/>}/>
-          <Route path="/client" element={<PrivateRoute user={user}><ClientDash user={user} bookings={bookings} onLogout={()=>{setUser(null);window.location.href="/login";}} onBook={()=>window.location.href="/book"}/></PrivateRoute>}/>
+          <Route path="/client" element={<PrivateRoute user={user}><ClientDash user={user} bookings={bookings} onLogout={()=>{setUser(null);sessionStorage.removeItem("user");window.location.href="/login";}} onBook={()=>window.location.href="/book"}/></PrivateRoute>}/>
           <Route path="/admin" element={<AdminRoute isAdmin={isAdmin}><AdminDash bookings={bookings} setBookings={setBookings} clients={clients} setClients={setClients} services={services} setServices={setServices} extras={extras} setExtras={setExtras} coupons={coupons} setCoupons={setCoupons} onLogout={()=>{setIsAdmin(false);sessionStorage.removeItem("isAdmin");window.location.href="/login";}}/></AdminRoute>}/>
           <Route path="/" element={<Navigate to="/login" replace/>}/>
           <Route path="*" element={<Navigate to="/login" replace/>}/>
         </Routes>
+
+        {/* Mobile bottom nav */}
+        {mobile && <MobileBottomNav user={user} isAdmin={isAdmin}/>}
       </div>
     </BrowserRouter>
   );
