@@ -108,6 +108,7 @@ const SUPER_ADMIN = {
 const DEF_ADMINS = [];
 
 // Helper to check super admin
+// eslint-disable-next-line no-unused-vars
 function isSuperAdminUser(u) {
   return u && u.role === "superadmin" && u.id === "super";
 }
