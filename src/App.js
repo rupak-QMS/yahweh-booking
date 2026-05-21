@@ -164,10 +164,11 @@ function Logo({ small }) {
       src="/logo.png"
       alt="Yahweh Property Care"
       style={{
-        height: small ? 36 : 48,
+        height: small ? 70 : 100,
         width: "auto",
         objectFit: "contain",
-        filter: "brightness(0) invert(0)",
+        display: "block",
+        mixBlendMode: "multiply",
       }}
     />
   );
@@ -1139,7 +1140,7 @@ function LoginScreen({ clients, onLogin, onAdmin, onGuest }) {
     <div style={{ maxWidth:420, margin:mobile?"0 auto":"56px auto", padding:mobile?"16px":"0 16px" }}>
       <div style={{ background:WHITE, borderRadius:mobile?16:18, border:`1px solid ${BORDER}`, padding:mobile?"24px 20px":"36px", boxShadow:"0 8px 40px rgba(27,117,187,0.10)", marginTop:mobile?8:0 }}>
         <div style={{ textAlign:"center", marginBottom:24 }}>
-          <img src="/logo.png" alt="Yahweh Property Care" style={{ height:60, width:"auto", objectFit:"contain", marginBottom:8 }}/>
+          <img src="/logo.png" alt="Yahweh Property Care" style={{ height:120, width:"auto", objectFit:"contain", marginBottom:4, mixBlendMode:"multiply" }}/>
           <p style={{ color:MUTED, fontSize:14, marginTop:8 }}>Sign in to manage your bookings</p>
         </div>
         {[["Email","email","email","you@example.com",setEmail,email],["Password","pass","password","••••••••",setPass,pass]].map(([l,id,t,p,fn,v])=>(
@@ -1231,7 +1232,7 @@ export default function App() {
     <BrowserRouter>
       <div style={{ fontFamily:"'Segoe UI',system-ui,sans-serif", background:BG, minHeight:"100vh", color:TEXT }}>
         {/* Header */}
-        <header style={{ background:WHITE, borderBottom:`1px solid ${BORDER}`, padding:mobile?"0 16px":"0 28px", display:"flex", alignItems:"center", justifyContent:"space-between", height:mobile?56:66, position:"sticky", top:0, zIndex:200, boxShadow:"0 2px 12px rgba(27,117,187,0.06)" }}>
+        <header style={{ background:WHITE, borderBottom:`1px solid ${BORDER}`, padding:mobile?"0 16px":"0 28px", display:"flex", alignItems:"center", justifyContent:"space-between", height:mobile?70:90, position:"sticky", top:0, zIndex:200, boxShadow:"0 2px 12px rgba(27,117,187,0.06)" }}>
           <div onClick={()=>window.location.href="/"} style={{ cursor:"pointer" }}><Logo small={mobile}/></div>
           <nav style={{ display:"flex", alignItems:"center", gap:mobile?8:12 }}>
             {!mobile && <>
