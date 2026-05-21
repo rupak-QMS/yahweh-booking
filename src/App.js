@@ -1222,8 +1222,10 @@ function PrivateRoute({ user, children }) {
   return user ? children : <Navigate to="/login" replace />;
 }
 
-function AdminRoute({ isAdmin, children }) {
-  return isAdmin ? children : <Navigate to="/admin-login" replace />;
+function AdminRoute({ children }) {
+  const adminUser = (() => { try { const a = sessionStorage.getItem("adminUser"); return a ? JSON.parse(a) : null; } catch(e){ return null; } })();
+  if (!adminUser) return <Navigate to="/admin-login" replace />;
+  return children;
 }
 
 export default function App() {
