@@ -160,19 +160,16 @@ const S = {
 
 function Logo({ small }) {
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:small?8:12 }}>
-      <svg width={small?36:46} height={small?36:46} viewBox="0 0 88 88" xmlns="http://www.w3.org/2000/svg">
-        <defs><linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#2196f3"/><stop offset="100%" stopColor={BLUE}/></linearGradient></defs>
-        <circle cx="44" cy="44" r="42" fill="url(#lg)"/>
-        <path d="M14 56 Q26 48 38 56 Q50 64 62 56 Q74 48 80 56" stroke="rgba(255,255,255,0.55)" strokeWidth="2.5" fill="none"/>
-        <path d="M14 64 Q26 56 38 64 Q50 72 62 64 Q74 56 80 64" stroke="rgba(255,255,255,0.35)" strokeWidth="2" fill="none"/>
-        <text x="14" y="60" fontFamily="Arial Black,sans-serif" fontSize="42" fontWeight="900" fill="#fff">Y</text>
-      </svg>
-      <div>
-        <div style={{ fontWeight:900, fontSize:small?17:21, lineHeight:1.1, color:TEXT }}>Ya<span style={{ color:GREEN }}>hweh</span></div>
-        {!small && <div style={{ fontSize:9, color:MUTED, letterSpacing:2.5, textTransform:"uppercase", fontWeight:700 }}>Property Care</div>}
-      </div>
-    </div>
+    <img
+      src="/logo.png"
+      alt="Yahweh Property Care"
+      style={{
+        height: small ? 36 : 48,
+        width: "auto",
+        objectFit: "contain",
+        filter: "brightness(0) invert(0)",
+      }}
+    />
   );
 }
 
@@ -1142,8 +1139,8 @@ function LoginScreen({ clients, onLogin, onAdmin, onGuest }) {
     <div style={{ maxWidth:420, margin:mobile?"0 auto":"56px auto", padding:mobile?"16px":"0 16px" }}>
       <div style={{ background:WHITE, borderRadius:mobile?16:18, border:`1px solid ${BORDER}`, padding:mobile?"24px 20px":"36px", boxShadow:"0 8px 40px rgba(27,117,187,0.10)", marginTop:mobile?8:0 }}>
         <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div style={{ display:"flex", justifyContent:"center" }}><Logo/></div>
-          <p style={{ color:MUTED, fontSize:14, marginTop:12 }}>Sign in to manage your bookings</p>
+          <img src="/logo.png" alt="Yahweh Property Care" style={{ height:60, width:"auto", objectFit:"contain", marginBottom:8 }}/>
+          <p style={{ color:MUTED, fontSize:14, marginTop:8 }}>Sign in to manage your bookings</p>
         </div>
         {[["Email","email","email","you@example.com",setEmail,email],["Password","pass","password","••••••••",setPass,pass]].map(([l,id,t,p,fn,v])=>(
           <div key={id} style={{ marginBottom:16 }}><div style={S.sLbl}>{l}</div><input type={t} value={v} onChange={e=>fn(e.target.value)} placeholder={p} style={S.inp} onKeyDown={e=>e.key==="Enter"&&tryLogin()}/></div>
