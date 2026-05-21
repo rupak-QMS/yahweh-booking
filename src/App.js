@@ -189,11 +189,15 @@ function Avatar({ name, size=36 }) {
 // ── MOBILE BOTTOM NAV ──
 function MobileBottomNav({ user, isAdmin }) {
   const path = window.location.pathname;
-  const items = [
-    { label:"Book", icon:<Icons.Home size={22}/>, href:"/book" },
-    user ? { label:"My Bookings", icon:<Icons.ClipboardList size={22}/>, href:"/client" } : { label:"Login", icon:<Icons.User size={22}/>, href:"/login" },
-    isAdmin ? { label:"Admin", icon:<Icons.Shield size={22}/>, href:"/admin" } : { label:"Admin", icon:<Icons.Lock size={22}/>, href:"/admin-login" },
-  ];
+  const items = isAdmin
+    ? [{ label:"Dashboard", icon:<Icons.ClipboardList size={22}/>, href:"/admin" }]
+    : [
+        { label:"Book", icon:<Icons.Home size={22}/>, href:"/book" },
+        user
+          ? { label:"My Bookings", icon:<Icons.ClipboardList size={22}/>, href:"/client" }
+          : { label:"Login", icon:<Icons.User size={22}/>, href:"/login" },
+        { label:"Admin", icon:<Icons.Lock size={22}/>, href:"/admin-login" },
+      ];
   return (
     <div style={{ position:"fixed", bottom:0, left:0, right:0, background:WHITE, borderTop:`1px solid ${BORDER}`, display:"flex", zIndex:300, boxShadow:"0 -4px 20px rgba(0,0,0,0.08)" }}>
       {items.map(item=>{
@@ -1222,6 +1226,11 @@ export default function App() {
   const [adminUser, setAdminUser] = useState(()=>{ try { const a=sessionStorage.getItem("adminUser"); return a?JSON.parse(a):null; } catch(e){ return null; } });
   const [admins, setAdmins] = useState(()=>{ try { const a=sessionStorage.getItem("adminList"); return a?JSON.parse(a):DEF_ADMINS; } catch(e){ return DEF_ADMINS; } });
   const isAdmin = !!adminUser;
+
+  // Keep adminList in sync
+  useEffect(()=>{
+    sessionStorage.setItem("adminList", JSON.stringify(admins));
+  },[admins]);
   const [bookings, setBookings] = useState(DEF_BOOKINGS);
   const [clients, setClients] = useState(DEF_CLIENTS);
   const [services, setServices] = useState(SERVICES);
@@ -1236,11 +1245,23 @@ export default function App() {
           <div onClick={()=>window.location.href="/"} style={{ cursor:"pointer" }}><Logo small={mobile}/></div>
           <nav style={{ display:"flex", alignItems:"center", gap:mobile?8:12 }}>
             {!mobile && <>
-              {user&&<button onClick={()=>window.location.href="/client"} style={{ background:"none", border:"none", color:MUTED, fontSize:13, cursor:"pointer", fontWeight:600, display:"flex", alignItems:"center", gap:5 }}><Icons.User size={14}/> My Bookings</button>}
-              <button style={{ ...S.btn(GREEN,WHITE), display:"flex", alignItems:"center", gap:6 }} onClick={()=>window.location.href="/book"}><Icons.Plus size={13}/> Book a Clean</button>
-              {!user&&!isAdmin&&<button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>window.location.href="/login"}>Login</button>}
-              {user&&<button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>{setUser(null);sessionStorage.removeItem("user");window.location.href="/login";}}>Logout</button>}
-              {isAdmin&&<button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>{setAdminUser(null);sessionStorage.removeItem("adminUser");sessionStorage.removeItem("isAdmin");window.location.href="/login";}}>Admin Logout</button>}
+              {/* Only show My Bookings to logged in clients — NOT admins */}
+              {user && !isAdmin && <button onClick={()=>window.location.href="/client"} style={{ background:"none", border:"none", color:MUTED, fontSize:13, cursor:"pointer", fontWeight:600, display:"flex", alignItems:"center", gap:5 }}><Icons.User size={14}/> My Bookings</button>}
+              {/* Show Book a Clean only to non-admins */}
+              {!isAdmin && <button style={{ ...S.btn(GREEN,WHITE), display:"flex", alignItems:"center", gap:6 }} onClick={()=>window.location.href="/book"}><Icons.Plus size={13}/> Book a Clean</button>}
+              {/* Login button for guests */}
+              {!user && !isAdmin && <button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>window.location.href="/login"}>Login</button>}
+              {/* Client logout */}
+              {user && !isAdmin && <button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>{setUser(null);sessionStorage.removeItem("user");window.location.href="/login";}}>Logout</button>}
+              {/* Admin logout */}
+              {isAdmin && <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ background:adminUser?.role==="superadmin"?`linear-gradient(135deg,${BLUE},#2196f3)`:LIGHT_BLUE, borderRadius:8, padding:"6px 14px", display:"flex", alignItems:"center", gap:6 }}>
+                  <span style={{ fontSize:12, color:adminUser?.role==="superadmin"?WHITE:BLUE, fontWeight:800 }}>
+                    {adminUser?.role==="superadmin"?"⭐ Super Admin":"👤 Admin"}: {adminUser?.name}
+                  </span>
+                </div>
+                <button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>{setAdminUser(null);sessionStorage.removeItem("adminUser");window.location.href="/login";}}>Logout</button>
+              </div>}
             </>}
             <a href="tel:1300925355" style={{ color:GREEN, fontWeight:800, textDecoration:"none", fontSize:mobile?13:14, display:"flex", alignItems:"center", gap:4 }}><Icons.Phone size={14}/>{!mobile&&" 1300 925 355"}</a>
           </nav>
