@@ -1234,7 +1234,6 @@ export default function App() {
   const [adminUser, setAdminUser] = useState(()=>{ try { const a=sessionStorage.getItem("adminUser"); return a?JSON.parse(a):null; } catch(e){ return null; } });
   const [admins, setAdmins] = useState(()=>{ try { const a=sessionStorage.getItem("adminList"); return a?JSON.parse(a):DEF_ADMINS; } catch(e){ return DEF_ADMINS; } });
   const isAdmin = !!adminUser;
-  const isSA = isSuperAdminUser(adminUser);
 
   useEffect(()=>{ sessionStorage.setItem("adminList", JSON.stringify(admins)); },[admins]);
   const [bookings, setBookings] = useState(DEF_BOOKINGS);
