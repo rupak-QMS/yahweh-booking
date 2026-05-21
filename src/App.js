@@ -107,6 +107,11 @@ const SUPER_ADMIN = {
 
 const DEF_ADMINS = [];
 
+// Helper to check super admin
+function isSuperAdminUser(u) {
+  return u && u.role === "superadmin" && u.id === "super";
+}
+
 const DEF_COUPONS = [
   { code:"YAHWEH10", disc:10, active:true },
   { code:"YPC10", disc:10, active:true },
@@ -1170,17 +1175,18 @@ function AdminLogin({ onLogin, onBack }) {
   const [err,setErr]=useState("");
 
   function tryLogin() {
-    // Check super admin
-    if (email===SUPER_ADMIN.email && pass===SUPER_ADMIN.password) {
-      const adminData = { ...SUPER_ADMIN };
+    // Check super admin first
+    if (email.trim().toLowerCase() === SUPER_ADMIN.email.toLowerCase() && pass === SUPER_ADMIN.password) {
+      const adminData = { id:"super", name:"Ron_admin", email:SUPER_ADMIN.email, role:"superadmin" };
       sessionStorage.setItem("adminUser", JSON.stringify(adminData));
       onLogin(adminData);
       return;
     }
-    // Check normal admins from sessionStorage list
+    // Check normal admins
     try {
-      const admins = JSON.parse(sessionStorage.getItem("adminList")||"[]");
-      const found = admins.find(a=>a.email===email&&a.password===pass);
+      const stored = sessionStorage.getItem("adminList");
+      const admins = stored ? JSON.parse(stored) : [];
+      const found = admins.find(a => a.email.toLowerCase()===email.trim().toLowerCase() && a.password===pass);
       if (found) {
         sessionStorage.setItem("adminUser", JSON.stringify(found));
         onLogin(found);
@@ -1226,11 +1232,9 @@ export default function App() {
   const [adminUser, setAdminUser] = useState(()=>{ try { const a=sessionStorage.getItem("adminUser"); return a?JSON.parse(a):null; } catch(e){ return null; } });
   const [admins, setAdmins] = useState(()=>{ try { const a=sessionStorage.getItem("adminList"); return a?JSON.parse(a):DEF_ADMINS; } catch(e){ return DEF_ADMINS; } });
   const isAdmin = !!adminUser;
+  const isSA = isSuperAdminUser(adminUser);
 
-  // Keep adminList in sync
-  useEffect(()=>{
-    sessionStorage.setItem("adminList", JSON.stringify(admins));
-  },[admins]);
+  useEffect(()=>{ sessionStorage.setItem("adminList", JSON.stringify(admins)); },[admins]);
   const [bookings, setBookings] = useState(DEF_BOOKINGS);
   const [clients, setClients] = useState(DEF_CLIENTS);
   const [services, setServices] = useState(SERVICES);
