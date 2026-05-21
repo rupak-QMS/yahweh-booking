@@ -236,7 +236,7 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
     cardName:"", cardNum:"", cardExp:"", cardCvv:"",
   });
 
-  const { subtotal, discAmt, couponDisc, total } = calcPrice(bk.svc,bk.beds,bk.baths,bk.freq,bk.extras,couponPct);
+  const { subtotal, discAmt, total } = calcPrice(bk.svc,bk.beds,bk.baths,bk.freq,bk.extras,couponPct);
   const set = k => e => setBk(p=>({...p,[k]:e.target.value}));
   const setV = (k,v) => setBk(p=>({...p,[k]:v}));
   const togExtra = ex => { const has=bk.extras.find(e=>e.id===ex.id); setV("extras",has?bk.extras.filter(e=>e.id!==ex.id):[...bk.extras,ex]); };
