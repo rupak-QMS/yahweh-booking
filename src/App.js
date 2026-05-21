@@ -97,6 +97,16 @@ const FREQS = [
 const TIME_SLOTS = ["7:00 AM","8:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","2:00 PM","3:00 PM"];
 const DAYS_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
+const SUPER_ADMIN = {
+  id: "super",
+  name: "Ron_admin",
+  email: "ron.web108@gmail.com",
+  password: "Ron@!two3@#",
+  role: "superadmin",
+};
+
+const DEF_ADMINS = [];
+
 const DEF_COUPONS = [
   { code:"YAHWEH10", disc:10, active:true },
   { code:"YPC10", disc:10, active:true },
@@ -124,14 +134,19 @@ const STATUS_CONFIG = {
 };
 
 function calcPrice(svc, beds, baths, freq, extras, couponPct) {
-  if (!svc) return { subtotal:0, discAmt:0, couponDisc:0, total:0 };
+  if (!svc) return { subtotal:0, discAmt:0, couponDisc:0, gst:0, total:0 };
+  const isNDIS = svc.id === "ndis";
   const roomAdd = svc.hasRooms ? (beds-1)*20+(baths-1)*15 : 0;
   const extTotal = extras.reduce((s,e)=>s+e.price,0);
   const sub = svc.base + roomAdd + extTotal;
   const disc = freq.disc>0 ? Math.round(sub*freq.disc/100) : 0;
   const coup = couponPct>0 ? Math.round((sub-disc)*couponPct/100) : 0;
-  return { subtotal:sub, discAmt:disc, couponDisc:coup, total:sub-disc-coup };
+  const afterDisc = sub - disc - coup;
+  const gst = isNDIS ? 0 : Math.round(afterDisc * 0.10 * 100) / 100;
+  return { subtotal:sub, discAmt:disc, couponDisc:coup, gst, total: afterDisc + gst };
 }
+
+const fmt = (n) => `A${Number(n).toFixed(2)}`;
 
 function uid() { return Math.random().toString(36).slice(2,8); }
 
@@ -199,12 +214,14 @@ function MobileBottomNav({ user, isAdmin }) {
 // ── SIDEBAR (desktop only) ──
 function Sidebar({ bk, coupon, setCoupon, couponPct, onApply, couponMsg }) {
   const { svc, beds, baths, freq, extras } = bk;
-  const { subtotal, discAmt, couponDisc, total } = calcPrice(svc,beds,baths,freq,extras,couponPct);
+  const { subtotal, discAmt, couponDisc, gst, total } = calcPrice(svc,beds,baths,freq,extras,couponPct);
+  const isNDIS = svc?.id === "ndis";
   return (
     <div style={{ background:WHITE, borderRadius:16, border:`1px solid ${BORDER}`, overflow:"hidden", position:"sticky", top:76, boxShadow:"0 4px 24px rgba(27,117,187,0.10)" }}>
       <div style={{ background:`linear-gradient(135deg,${BLUE},#2196f3)`, padding:"20px 22px", color:WHITE }}>
         <div style={{ fontSize:11, fontWeight:700, opacity:0.8, letterSpacing:1, textTransform:"uppercase", marginBottom:6 }}>Service Summary</div>
-        <div style={{ fontSize:30, fontWeight:900 }}>${total.toFixed(2)}</div>
+        <div style={{ fontSize:30, fontWeight:900 }}>{fmt(total)}</div>
+        <div style={{ fontSize:12, opacity:0.75, marginTop:4 }}>{isNDIS ? "GST Free (NDIS)" : "Inc. 10% GST"}</div>
       </div>
       <div style={{ padding:"20px" }}>
         {!svc ? <div style={{ color:MUTED, fontSize:13, textAlign:"center", padding:"20px 0" }}>Select a service to see pricing</div> : <>
@@ -219,11 +236,15 @@ function Sidebar({ bk, coupon, setCoupon, couponPct, onApply, couponMsg }) {
             </div>
           ))}
           <div style={{ background:BG, borderRadius:10, padding:"14px 16px", marginTop:14 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:6 }}><span style={{ color:MUTED }}>Sub Total</span><span style={{ fontWeight:700 }}>${subtotal.toFixed(2)}</span></div>
-            {discAmt>0&&<div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:6, color:GREEN }}><span>Discount</span><span style={{ fontWeight:700 }}>-${discAmt.toFixed(2)}</span></div>}
-            {couponDisc>0&&<div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:6, color:GREEN }}><span>Promo</span><span style={{ fontWeight:700 }}>-${couponDisc.toFixed(2)}</span></div>}
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:6 }}><span style={{ color:MUTED }}>Sub Total</span><span style={{ fontWeight:700 }}>{fmt(subtotal)}</span></div>
+            {discAmt>0&&<div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:6, color:GREEN }}><span>Discount</span><span style={{ fontWeight:700 }}>-{fmt(discAmt)}</span></div>}
+            {couponDisc>0&&<div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:6, color:GREEN }}><span>Promo</span><span style={{ fontWeight:700 }}>-{fmt(couponDisc)}</span></div>}
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:6, color:isNDIS?GREEN:MUTED }}>
+              <span>GST (10%)</span>
+              <span style={{ fontWeight:700 }}>{isNDIS?"GST Free":fmt(gst)}</span>
+            </div>
             <hr style={{ border:"none", borderTop:`1px dashed ${BORDER}`, margin:"10px 0" }}/>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}><span style={{ fontWeight:800, fontSize:15 }}>Total</span><span style={{ fontWeight:900, fontSize:22, color:BLUE }}>${total.toFixed(2)}</span></div>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}><span style={{ fontWeight:800, fontSize:15 }}>Total (AUD)</span><span style={{ fontWeight:900, fontSize:22, color:BLUE }}>{fmt(total)}</span></div>
           </div>
           <div style={{ display:"flex", gap:8, marginTop:14 }}>
             <input value={coupon} onChange={e=>setCoupon(e.target.value.toUpperCase())} placeholder="Discount code" style={{ ...S.inp, flex:1, fontSize:13, padding:"9px 12px" }}/>
@@ -278,7 +299,8 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
     cardName:"", cardNum:"", cardExp:"", cardCvv:"",
   });
 
-  const { subtotal, discAmt, total } = calcPrice(bk.svc,bk.beds,bk.baths,bk.freq,bk.extras,couponPct);
+  const { subtotal, discAmt, gst, total } = calcPrice(bk.svc,bk.beds,bk.baths,bk.freq,bk.extras,couponPct);
+  const isNDIS = bk.svc?.id === "ndis";
   const set = k => e => setBk(p=>({...p,[k]:e.target.value}));
   const setV = (k,v) => setBk(p=>({...p,[k]:v}));
   const togExtra = ex => { const has=bk.extras.find(e=>e.id===ex.id); setV("extras",has?bk.extras.filter(e=>e.id!==ex.id):[...bk.extras,ex]); };
@@ -317,7 +339,7 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
         <h2 style={{ fontSize:mobile?22:26, fontWeight:900, color:GREEN, marginBottom:8 }}>Booking Confirmed!</h2>
         <p style={{ color:MUTED, marginBottom:20, fontSize:14 }}>Confirmation sent to <strong style={{ color:BLUE }}>{bk.email}</strong></p>
         <div style={{ background:BG, borderRadius:12, padding:16, textAlign:"left", marginBottom:16 }}>
-          {[["Service",bk.svc.name],["Date",bk.date?bk.date.toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"—"],["Time",bk.time],["Total",`$${total.toFixed(2)}`]].map(([k,v])=>(
+          {[["Service",bk.svc.name],["Date",bk.date?bk.date.toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"—"],["Time",bk.time],["GST",isNDIS?"GST Free":fmt(gst)],["Total (AUD)",fmt(total)]].map(([k,v])=>(
             <div key={k} style={{ display:"flex", justifyContent:"space-between", marginBottom:8, fontSize:14 }}><span style={{ color:MUTED }}>{k}</span><span style={{ fontWeight:700 }}>{v}</span></div>
           ))}
         </div>
@@ -549,53 +571,193 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
 // ── CLIENT DASHBOARD ──
 function ClientDash({ user, bookings, onLogout, onBook }) {
   const mobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState("upcoming");
   const mine = bookings.filter(b=>b.clientId===user.id||b.clientEmail===user.email);
   const upcoming = mine.filter(b=>["Confirmed","Pending"].includes(b.status));
   const past = mine.filter(b=>["Completed","Cancelled"].includes(b.status));
+  const totalSpent = past.filter(b=>b.status==="Completed").reduce((s,b)=>s+b.total,0);
+  const nextBooking = upcoming.sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
+
   return (
-    <div style={{ maxWidth:900, margin:"0 auto", padding:mobile?"12px 16px":"28px 24px", paddingBottom:mobile?80:28 }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-        <div>
-          <h2 style={{ fontSize:mobile?18:22, fontWeight:900 }}>Welcome, <span style={{ color:BLUE }}>{user.name.split(" ")[0]}</span> 👋</h2>
-          <p style={{ color:MUTED, fontSize:12, marginTop:2 }}>{user.email}</p>
-        </div>
-        {!mobile&&<div style={{ display:"flex", gap:10 }}>
-          <button style={S.btn(GREEN,WHITE)} onClick={onBook}>+ New Booking</button>
-          <button style={S.btn(WHITE,BLUE,BLUE)} onClick={onLogout}>Logout</button>
-        </div>}
-      </div>
+    <div style={{ background:BG, minHeight:"100vh", paddingBottom:mobile?90:40 }}>
+      {/* Hero header */}
+      <div style={{ background:`linear-gradient(135deg, ${BLUE} 0%, #1565a8 60%, #0d4a7a 100%)`, padding:mobile?"24px 16px 80px":"32px 40px 90px", position:"relative", overflow:"hidden" }}>
+        {/* Decorative circles */}
+        <div style={{ position:"absolute", top:-40, right:-40, width:200, height:200, borderRadius:"50%", background:"rgba(255,255,255,0.06)" }}/>
+        <div style={{ position:"absolute", bottom:-60, left:-20, width:160, height:160, borderRadius:"50%", background:"rgba(255,255,255,0.04)" }}/>
+        <div style={{ position:"absolute", top:20, right:80, width:80, height:80, borderRadius:"50%", background:"rgba(126,184,66,0.2)" }}/>
 
-      {mobile&&<button style={{ ...S.btn(GREEN,WHITE), width:"100%", padding:"14px", marginBottom:16, fontSize:15, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }} onClick={onBook}><Icons.Plus size={16}/> Book a New Clean</button>}
-
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:mobile?10:16, marginBottom:mobile?16:28 }}>
-        {[["📋","Total",mine.length,BLUE],["📅","Upcoming",upcoming.length,"#e67e22"],["✅","Done",past.filter(b=>b.status==="Completed").length,GREEN]].map(([icon,label,val,color])=>(
-          <div key={label} style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, padding:mobile?"14px 12px":"20px 22px", textAlign:mobile?"center":"left" }}>
-            <div style={{ fontSize:mobile?22:28, marginBottom:4 }}>{icon}</div>
-            <div style={{ fontSize:mobile?22:30, fontWeight:900, color }}>{val}</div>
-            <div style={{ fontSize:mobile?11:13, color:MUTED }}>{label}</div>
+        <div style={{ position:"relative", zIndex:1, maxWidth:900, margin:"0 auto" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:12 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+              <div style={{ width:mobile?52:64, height:mobile?52:64, borderRadius:"50%", background:"rgba(255,255,255,0.2)", border:"3px solid rgba(255,255,255,0.4)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:mobile?20:26, color:WHITE, flexShrink:0 }}>
+                {user.name.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase()}
+              </div>
+              <div>
+                <div style={{ fontSize:mobile?11:12, color:"rgba(255,255,255,0.7)", fontWeight:700, letterSpacing:1, textTransform:"uppercase" }}>Welcome back</div>
+                <div style={{ fontSize:mobile?20:26, fontWeight:900, color:WHITE, lineHeight:1.2 }}>{user.name}</div>
+                <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", marginTop:2 }}>{user.email}</div>
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={onBook} style={{ background:GREEN, color:WHITE, border:"none", borderRadius:10, padding:mobile?"10px 16px":"12px 22px", fontSize:mobile?13:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6, boxShadow:"0 4px 16px rgba(126,184,66,0.4)" }}>
+                <Icons.Plus size={14}/> New Booking
+              </button>
+              {!mobile&&<button onClick={onLogout} style={{ background:"rgba(255,255,255,0.15)", color:WHITE, border:"1px solid rgba(255,255,255,0.3)", borderRadius:10, padding:"12px 20px", fontSize:14, fontWeight:700, cursor:"pointer" }}>Logout</button>}
+            </div>
           </div>
-        ))}
+        </div>
       </div>
 
-      {upcoming.length>0&&<><div style={{ fontSize:mobile?14:16, fontWeight:800, color:BLUE, marginBottom:10 }}>Upcoming Bookings</div><div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:20 }}>{upcoming.map(b=><BkCard key={b.id} b={b} mobile={mobile}/>)}</div></>}
-      <div style={{ fontSize:mobile?14:16, fontWeight:800, color:MUTED, marginBottom:10 }}>Past Bookings</div>
-      {past.length===0?<div style={{ color:MUTED, fontSize:14, padding:"16px 0" }}>No past bookings yet.</div>:<div style={{ display:"flex", flexDirection:"column", gap:10 }}>{past.map(b=><BkCard key={b.id} b={b} mobile={mobile}/>)}</div>}
+      {/* Stats cards — overlapping hero */}
+      <div style={{ maxWidth:900, margin:mobile?"-40px 16px 0":"-44px auto 0", position:"relative", zIndex:2 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:mobile?10:16 }}>
+          {[
+            { icon:"📋", label:"Total Bookings", value:mine.length, color:BLUE, sub:"All time" },
+            { icon:"✅", label:"Completed", value:past.filter(b=>b.status==="Completed").length, color:GREEN, sub:"Cleans done" },
+            { icon:"💰", label:"Total Spent", value:fmt(totalSpent), color:"#9b59b6", sub:"Inc. GST" },
+          ].map(({icon,label,value,color,sub})=>(
+            <div key={label} style={{ background:WHITE, borderRadius:14, padding:mobile?"14px 12px":"20px", boxShadow:"0 8px 32px rgba(27,117,187,0.12)", border:`1px solid ${BORDER}` }}>
+              <div style={{ fontSize:mobile?22:28, marginBottom:6 }}>{icon}</div>
+              <div style={{ fontSize:mobile?18:24, fontWeight:900, color, lineHeight:1 }}>{value}</div>
+              <div style={{ fontSize:mobile?11:13, fontWeight:700, color:TEXT, marginTop:4 }}>{label}</div>
+              <div style={{ fontSize:10, color:MUTED, marginTop:2 }}>{sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ maxWidth:900, margin:"0 auto", padding:mobile?"16px 16px 0":"24px 0 0" }}>
+
+        {/* Next booking banner */}
+        {nextBooking && (
+          <div style={{ background:WHITE, borderRadius:16, border:`1px solid ${BORDER}`, padding:mobile?"16px":"20px 24px", marginBottom:20, boxShadow:"0 4px 16px rgba(27,117,187,0.08)", display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
+            <div style={{ width:mobile?44:52, height:mobile?44:52, background:LIGHT_BLUE, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", color:BLUE, flexShrink:0 }}>
+              <Icons.Calendar size={mobile?20:24}/>
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:11, fontWeight:800, color:MUTED, textTransform:"uppercase", letterSpacing:1, marginBottom:3 }}>Next Appointment</div>
+              <div style={{ fontWeight:800, fontSize:mobile?15:17, color:TEXT }}>{nextBooking.service}</div>
+              <div style={{ fontSize:13, color:MUTED, marginTop:2, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                <span style={{ display:"flex", alignItems:"center", gap:4 }}><Icons.Calendar size={12}/>{nextBooking.date}</span>
+                <span>·</span>
+                <span style={{ display:"flex", alignItems:"center", gap:4 }}><Icons.Clock size={12}/>{nextBooking.time}</span>
+              </div>
+            </div>
+            <div style={{ textAlign:"right" }}>
+              <StatusTag s={nextBooking.status}/>
+              <div style={{ fontSize:mobile?18:22, fontWeight:900, color:BLUE, marginTop:6 }}>{fmt(nextBooking.total)}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div style={{ display:"flex", gap:4, marginBottom:16, background:WHITE, borderRadius:12, padding:6, border:`1px solid ${BORDER}`, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+          {[["upcoming",`Upcoming (${upcoming.length})`],["past",`History (${past.length})`]].map(([id,label])=>(
+            <button key={id} onClick={()=>setActiveTab(id)} style={{ flex:1, background:activeTab===id?BLUE:"transparent", color:activeTab===id?WHITE:MUTED, border:"none", borderRadius:9, padding:"10px", fontSize:13, fontWeight:700, cursor:"pointer", transition:"all .2s" }}>{label}</button>
+          ))}
+        </div>
+
+        {/* Upcoming */}
+        {activeTab==="upcoming" && <>
+          {upcoming.length===0 ? (
+            <div style={{ background:WHITE, borderRadius:16, border:`1px solid ${BORDER}`, padding:"48px 24px", textAlign:"center" }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>📅</div>
+              <div style={{ fontWeight:800, fontSize:17, color:TEXT, marginBottom:6 }}>No upcoming bookings</div>
+              <div style={{ color:MUTED, fontSize:14, marginBottom:20 }}>Schedule your next clean today</div>
+              <button onClick={onBook} style={{ background:BLUE, color:WHITE, border:"none", borderRadius:10, padding:"12px 28px", fontSize:14, fontWeight:700, cursor:"pointer" }}>Book a Clean</button>
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              {upcoming.map(b=><BookingCard key={b.id} b={b} mobile={mobile}/>)}
+            </div>
+          )}
+        </>}
+
+        {/* Past */}
+        {activeTab==="past" && <>
+          {past.length===0 ? (
+            <div style={{ background:WHITE, borderRadius:16, border:`1px solid ${BORDER}`, padding:"48px 24px", textAlign:"center" }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>🧹</div>
+              <div style={{ fontWeight:800, fontSize:17, color:TEXT, marginBottom:6 }}>No past bookings yet</div>
+              <div style={{ color:MUTED, fontSize:14 }}>Your completed bookings will appear here</div>
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              {past.map(b=><BookingCard key={b.id} b={b} mobile={mobile}/>)}
+            </div>
+          )}
+        </>}
+
+        {/* Quick actions */}
+        <div style={{ marginTop:24 }}>
+          <div style={{ fontSize:14, fontWeight:800, color:TEXT, marginBottom:12 }}>Quick Actions</div>
+          <div style={{ display:"grid", gridTemplateColumns:mobile?"1fr 1fr":"repeat(3,1fr)", gap:12 }}>
+            {[
+              { icon:"🧹", label:"Book a Clean", sub:"Schedule new service", action:onBook, color:BLUE, bg:LIGHT_BLUE },
+              { icon:"📞", label:"Call Us", sub:"1300 925 355", action:()=>window.location.href="tel:1300925355", color:GREEN, bg:LIGHT_GREEN },
+              { icon:"🌐", label:"Our Website", sub:"yahwehpc.com.au", action:()=>window.open("https://yahwehpc.com.au","_blank"), color:"#9b59b6", bg:"#f5f0ff" },
+            ].map(({icon,label,sub,action,color,bg})=>(
+              <div key={label} onClick={action} style={{ background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, padding:"16px", cursor:"pointer", display:"flex", alignItems:"center", gap:12, boxShadow:"0 2px 8px rgba(0,0,0,0.04)", transition:"all .2s" }}>
+                <div style={{ width:44, height:44, background:bg, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{icon}</div>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:13, color }}>{label}</div>
+                  <div style={{ fontSize:11, color:MUTED, marginTop:2 }}>{sub}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-function BkCard({ b, mobile }) {
+function BookingCard({ b, mobile }) {
+  const statusIcons = { Confirmed:"✅", Pending:"⏳", Completed:"🏆", Cancelled:"❌" };
   return (
-    <div style={{ background:WHITE, borderRadius:12, border:`1px solid ${BORDER}`, padding:mobile?"14px":"16px 20px" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:mobile?8:0 }}>
-        <div style={{ fontWeight:800, fontSize:mobile?14:15 }}>{b.service}</div>
+    <div style={{ background:WHITE, borderRadius:14, border:`1px solid ${BORDER}`, overflow:"hidden", boxShadow:"0 2px 10px rgba(27,117,187,0.06)" }}>
+      {/* Card header */}
+      <div style={{ background:b.status==="Completed"?LIGHT_GREEN:b.status==="Cancelled"?"#fdecea":LIGHT_BLUE, padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:`1px solid ${BORDER}` }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:16 }}>{statusIcons[b.status]||"📋"}</span>
+          <span style={{ fontWeight:800, fontSize:13, color:b.status==="Completed"?GREEN:b.status==="Cancelled"?"#e74c3c":BLUE }}>{b.service}</span>
+        </div>
         <StatusTag s={b.status}/>
       </div>
-      <div style={{ fontSize:12, color:MUTED, marginTop:4, display:"flex", alignItems:"center", gap:6 }}><Icons.Calendar size={13}/>{b.date} · {b.time}</div>
-      <div style={{ fontSize:12, color:MUTED, marginTop:3 }}>{b.address}</div>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:mobile?10:8 }}>
-        <div style={{ fontSize:12, color:MUTED }}>{b.freq}</div>
-        <div style={{ fontWeight:900, fontSize:mobile?18:22, color:BLUE }}>${b.total.toFixed(2)}</div>
+      {/* Card body */}
+      <div style={{ padding:mobile?"14px":"16px 20px" }}>
+        <div style={{ display:"grid", gridTemplateColumns:mobile?"1fr":"1fr 1fr", gap:mobile?10:16, marginBottom:12 }}>
+          <div style={{ display:"flex", gap:10 }}>
+            <div style={{ width:36, height:36, background:LIGHT_BLUE, borderRadius:9, display:"flex", alignItems:"center", justifyContent:"center", color:BLUE, flexShrink:0 }}><Icons.Calendar size={16}/></div>
+            <div>
+              <div style={{ fontSize:10, color:MUTED, fontWeight:700, textTransform:"uppercase", letterSpacing:.8 }}>Date & Time</div>
+              <div style={{ fontWeight:700, fontSize:13, color:TEXT, marginTop:1 }}>{b.date}</div>
+              <div style={{ fontSize:12, color:MUTED }}>{b.time}</div>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:10 }}>
+            <div style={{ width:36, height:36, background:LIGHT_GREEN, borderRadius:9, display:"flex", alignItems:"center", justifyContent:"center", color:GREEN, flexShrink:0 }}><Icons.MapPin size={16}/></div>
+            <div style={{ minWidth:0 }}>
+              <div style={{ fontSize:10, color:MUTED, fontWeight:700, textTransform:"uppercase", letterSpacing:.8 }}>Location</div>
+              <div style={{ fontWeight:600, fontSize:12, color:TEXT, marginTop:1, lineHeight:1.4, wordBreak:"break-word" }}>{b.address}</div>
+            </div>
+          </div>
+        </div>
+        {b.extras&&b.extras.length>0&&(
+          <div style={{ background:BG, borderRadius:8, padding:"8px 12px", marginBottom:12, fontSize:12, color:MUTED }}>
+            <span style={{ fontWeight:700, color:GREEN }}>Extras: </span>{b.extras.join(", ")}
+          </div>
+        )}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingTop:10, borderTop:`1px dashed ${BORDER}` }}>
+          <div style={{ fontSize:12, color:MUTED, display:"flex", alignItems:"center", gap:5 }}>
+            <Icons.Tag size={12}/> {b.freq}
+          </div>
+          <div>
+            <div style={{ fontSize:18, fontWeight:900, color:BLUE, textAlign:"right" }}>{fmt(b.total)}</div>
+            <div style={{ fontSize:10, color:MUTED, textAlign:"right" }}>Inc. GST</div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1001,24 +1163,48 @@ function LoginScreen({ clients, onLogin, onAdmin, onGuest }) {
 
 function AdminLogin({ onLogin, onBack }) {
   const mobile = useIsMobile();
+  const [email,setEmail]=useState("");
   const [pass,setPass]=useState("");
   const [err,setErr]=useState("");
+
   function tryLogin() {
-    if (pass==="admin123") {
-      sessionStorage.setItem("isAdmin","true");
-      onLogin();
-    } else setErr("Wrong password. Try: admin123");
+    // Check super admin
+    if (email===SUPER_ADMIN.email && pass===SUPER_ADMIN.password) {
+      const adminData = { ...SUPER_ADMIN };
+      sessionStorage.setItem("adminUser", JSON.stringify(adminData));
+      onLogin(adminData);
+      return;
+    }
+    // Check normal admins from sessionStorage list
+    try {
+      const admins = JSON.parse(sessionStorage.getItem("adminList")||"[]");
+      const found = admins.find(a=>a.email===email&&a.password===pass);
+      if (found) {
+        sessionStorage.setItem("adminUser", JSON.stringify(found));
+        onLogin(found);
+        return;
+      }
+    } catch(e){}
+    setErr("Invalid email or password.");
   }
+
   return (
     <div style={{ maxWidth:360, margin:mobile?"0 auto":"56px auto", padding:mobile?"16px":"0 16px" }}>
       <div style={{ background:WHITE, borderRadius:mobile?16:18, border:`1px solid ${BORDER}`, padding:mobile?"24px 20px":"36px", textAlign:"center", boxShadow:"0 8px 40px rgba(27,117,187,0.10)", marginTop:mobile?8:0 }}>
         <div style={{ width:72, height:72, background:LIGHT_BLUE, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}><Icons.Lock size={36}/></div>
-        <h2 style={{ fontWeight:900, fontSize:20, color:BLUE, marginBottom:20 }}>Admin Access</h2>
-        <div style={{ textAlign:"left", marginBottom:16 }}><div style={S.sLbl}>Admin Password</div><input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" style={S.inp} onKeyDown={e=>e.key==="Enter"&&tryLogin()}/></div>
-        {err&&<div style={{ color:"#e74c3c", fontSize:13, marginBottom:12 }}>{err}</div>}
-        <button style={{ ...S.btn(BLUE,WHITE), width:"100%", marginBottom:10, padding:"14px" }} onClick={tryLogin}>Access Dashboard</button>
+        <h2 style={{ fontWeight:900, fontSize:20, color:BLUE, marginBottom:6 }}>Admin Login</h2>
+        <p style={{ color:MUTED, fontSize:13, marginBottom:20 }}>Yahweh Property Care</p>
+        <div style={{ textAlign:"left", marginBottom:14 }}>
+          <div style={S.sLbl}>Email Address</div>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@example.com" style={S.inp} onKeyDown={e=>e.key==="Enter"&&tryLogin()}/>
+        </div>
+        <div style={{ textAlign:"left", marginBottom:14 }}>
+          <div style={S.sLbl}>Password</div>
+          <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" style={S.inp} onKeyDown={e=>e.key==="Enter"&&tryLogin()}/>
+        </div>
+        {err&&<div style={{ color:"#e74c3c", fontSize:13, marginBottom:12, background:"#fdecea", borderRadius:8, padding:"8px 12px" }}>{err}</div>}
+        <button style={{ ...S.btn(BLUE,WHITE), width:"100%", marginBottom:10, padding:"14px" }} onClick={tryLogin}>Login to Dashboard</button>
         <button style={{ ...S.btn(WHITE,BLUE,BLUE), width:"100%", padding:"14px" }} onClick={onBack}>← Back</button>
-        <p style={{ fontSize:12, color:MUTED, marginTop:14 }}>Demo password: admin123</p>
       </div>
     </div>
   );
@@ -1034,10 +1220,10 @@ function AdminRoute({ isAdmin, children }) {
 
 export default function App() {
   const mobile = useIsMobile();
-  const [user, setUser] = useState(()=>{
-    try { const u=sessionStorage.getItem("user"); return u?JSON.parse(u):null; } catch(e){ return null; }
-  });
-  const [isAdmin, setIsAdmin] = useState(sessionStorage.getItem("isAdmin")==="true");
+  const [user, setUser] = useState(()=>{ try { const u=sessionStorage.getItem("user"); return u?JSON.parse(u):null; } catch(e){ return null; } });
+  const [adminUser, setAdminUser] = useState(()=>{ try { const a=sessionStorage.getItem("adminUser"); return a?JSON.parse(a):null; } catch(e){ return null; } });
+  const [admins, setAdmins] = useState(()=>{ try { const a=sessionStorage.getItem("adminList"); return a?JSON.parse(a):DEF_ADMINS; } catch(e){ return DEF_ADMINS; } });
+  const isAdmin = !!adminUser;
   const [bookings, setBookings] = useState(DEF_BOOKINGS);
   const [clients, setClients] = useState(DEF_CLIENTS);
   const [services, setServices] = useState(SERVICES);
@@ -1056,7 +1242,7 @@ export default function App() {
               <button style={{ ...S.btn(GREEN,WHITE), display:"flex", alignItems:"center", gap:6 }} onClick={()=>window.location.href="/book"}><Icons.Plus size={13}/> Book a Clean</button>
               {!user&&!isAdmin&&<button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>window.location.href="/login"}>Login</button>}
               {user&&<button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>{setUser(null);sessionStorage.removeItem("user");window.location.href="/login";}}>Logout</button>}
-              {isAdmin&&<button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>{setIsAdmin(false);sessionStorage.removeItem("isAdmin");window.location.href="/login";}}>Admin Logout</button>}
+              {isAdmin&&<button style={S.btn(WHITE,BLUE,BLUE)} onClick={()=>{setAdminUser(null);sessionStorage.removeItem("adminUser");sessionStorage.removeItem("isAdmin");window.location.href="/login";}}>Admin Logout</button>}
             </>}
             <a href="tel:1300925355" style={{ color:GREEN, fontWeight:800, textDecoration:"none", fontSize:mobile?13:14, display:"flex", alignItems:"center", gap:4 }}><Icons.Phone size={14}/>{!mobile&&" 1300 925 355"}</a>
           </nav>
@@ -1064,10 +1250,10 @@ export default function App() {
 
         <Routes>
           <Route path="/login" element={<LoginScreen clients={clients} onLogin={u=>{setUser(u);sessionStorage.setItem("user",JSON.stringify(u));window.location.href="/client";}} onAdmin={()=>window.location.href="/admin-login"} onGuest={()=>window.location.href="/book"}/>}/>
-          <Route path="/admin-login" element={<AdminLogin onLogin={()=>{setIsAdmin(true);window.location.href="/admin";}} onBack={()=>window.location.href="/login"}/>}/>
+          <Route path="/admin-login" element={<AdminLogin onLogin={u=>{ setAdminUser(u); window.location.href="/admin"; }} onBack={()=>window.location.href="/login"}/>}/>
           <Route path="/book" element={<BookingApp user={user} services={services} extras={extras} coupons={coupons} onComplete={nb=>setBookings(p=>[...p,nb])}/>}/>
           <Route path="/client" element={<PrivateRoute user={user}><ClientDash user={user} bookings={bookings} onLogout={()=>{setUser(null);sessionStorage.removeItem("user");window.location.href="/login";}} onBook={()=>window.location.href="/book"}/></PrivateRoute>}/>
-          <Route path="/admin" element={<AdminRoute isAdmin={isAdmin}><AdminDash bookings={bookings} setBookings={setBookings} clients={clients} setClients={setClients} services={services} setServices={setServices} extras={extras} setExtras={setExtras} coupons={coupons} setCoupons={setCoupons} onLogout={()=>{setIsAdmin(false);sessionStorage.removeItem("isAdmin");window.location.href="/login";}}/></AdminRoute>}/>
+          <Route path="/admin" element={<AdminRoute isAdmin={isAdmin}><AdminDash adminUser={adminUser} admins={admins} setAdmins={setAdmins} bookings={bookings} setBookings={setBookings} clients={clients} setClients={setClients} services={services} setServices={setServices} extras={extras} setExtras={setExtras} coupons={coupons} setCoupons={setCoupons} onLogout={()=>{ setAdminUser(null); sessionStorage.removeItem("adminUser"); sessionStorage.removeItem("isAdmin"); window.location.href="/login"; }}/></AdminRoute>}/>
           <Route path="/" element={<Navigate to="/login" replace/>}/>
           <Route path="*" element={<Navigate to="/login" replace/>}/>
         </Routes>
