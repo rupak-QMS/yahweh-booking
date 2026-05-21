@@ -113,6 +113,12 @@ function isSuperAdminUser(u) {
   return u && u.role === "superadmin" && u.id === "super";
 }
 
+function checkSuperAdmin(u) {
+  return !!(u && u.role === "superadmin" && u.id === "super");
+}
+  return u && u.role === "superadmin" && u.id === "super";
+}
+
 const DEF_COUPONS = [
   { code:"YAHWEH10", disc:10, active:true },
   { code:"YPC10", disc:10, active:true },
