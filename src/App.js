@@ -260,8 +260,7 @@ function MobilePriceStrip({ total, step, onNext, onBack }) {
 
 // ── BOOKING APP ──
 function BookingApp({ user, services, extras, coupons, freqs: freqsProp, onComplete }) {
-  // Always read fresh freqs from sessionStorage so admin changes apply live
-  const freqs = (() => { try { const f = sessionStorage.getItem("freqs"); return f ? JSON.parse(f) : freqsProp; } catch(e) { return freqsProp; } })();
+  const activeFreqs = (() => { try { const f = sessionStorage.getItem("freqs"); return f ? JSON.parse(f) : freqsProp; } catch(e) { return freqsProp; } })();
   const mobile = useIsMobile();
   const [step, setStep] = useState(1);
   const [maxStep, setMaxStep] = useState(1);
@@ -272,7 +271,7 @@ function BookingApp({ user, services, extras, coupons, freqs: freqsProp, onCompl
   const [done, setDone] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [bk, setBk] = useState({
-    svc: services[0] || null, beds: 1, baths: 1, freq: FREQS[1], extras: [],
+    svc: services[0] || null, beds: 1, baths: 1, freq: activeFreqs[1] || activeFreqs[0], extras: [],
     date: null, time: "9:00 AM",
     firstName: user ? user.name.split(" ")[0] : "", lastName: user ? user.name.split(" ").slice(1).join(" ") : "",
     email: user ? user.email : "", phone: user ? user.phone : "",
@@ -433,7 +432,7 @@ function BookingApp({ user, services, extras, coupons, freqs: freqsProp, onCompl
             <div style={S.panel(mobile)}>
               <div style={S.secTitle(mobile)}>How often?</div>
               <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(auto-fill,minmax(170px,1fr))", gap: mobile ? 10 : 12 }}>
-                {FREQS.map(f => {
+                {activeFreqs.map(f => {
                   const a = bk.freq.id === f.id;
                   return (
                     <div key={f.id} onClick={() => setV("freq", f)} style={{ border: `2px solid ${a ? GREEN : BORDER}`, borderRadius: 12, padding: mobile ? "14px" : "16px 18px", cursor: "pointer", background: a ? LIGHT_GREEN : WHITE }}>
