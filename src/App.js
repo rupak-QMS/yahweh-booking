@@ -41,7 +41,7 @@ const SUPER_ADMIN = { id: "super", name: "Ron_admin", email: "ron.web108@gmail.c
 
 // ── HARDCODED ADMINS — Add new admins here so they work on ALL devices ──
 const HARDCODED_ADMINS = [
-  // { id:"a001", name:"Alex Yogarajah", email:"alex@yahwehpc.com.au", password:"Yahweh219@#", role:"admin" },
+  { id:"a001", name:"Alex Yogarajah", email:"alex@yahwehpc.com.au", password:"Yahweh219@#", role:"admin" },
 ];
 
 // ── DEFAULT DATA ──
