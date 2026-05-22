@@ -259,7 +259,7 @@ function MobilePriceStrip({ total, step, onNext, onBack }) {
 }
 
 // ── BOOKING APP ──
-function BookingApp({ user, services, extras, coupons, onComplete }) {
+function BookingApp({ user, services, extras, coupons, freqs, onComplete }) {
   const mobile = useIsMobile();
   const [step, setStep] = useState(1);
   const [maxStep, setMaxStep] = useState(1);
@@ -808,8 +808,139 @@ function ClientForm({ data, onSave }) {
   </>;
 }
 
+// ── DISCOUNTS TAB ──
+function DiscountsTab({ freqs, setFreqs, mobile }) {
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({ label: "", disc: 0, active: true });
+  const [addModal, setAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({ label: "", disc: 0 });
+
+  function saveEdit() {
+    setFreqs(p => p.map(f => f.id === editing ? { ...f, ...form, disc: Number(form.disc) } : f));
+    setEditing(null);
+  }
+
+  function addFreq() {
+    if (!addForm.label) { alert("Label required"); return; }
+    setFreqs(p => [...p, { id: "freq" + uid(), label: addForm.label, disc: Number(addForm.disc), active: true }]);
+    setAddForm({ label: "", disc: 0 });
+    setAddModal(false);
+  }
+
+  function delFreq(id) {
+    setFreqs(p => p.filter(f => f.id !== id));
+  }
+
+  return (
+    <>
+      {/* Info banner */}
+      <div style={{ background: `linear-gradient(135deg,${LIGHT_BLUE},${WHITE})`, borderRadius: 14, padding: "20px 24px", marginBottom: 20, border: `1px solid ${BLUE}22` }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Discount Management</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: TEXT, marginBottom: 4 }}>Manage frequency discounts & room pricing</div>
+        <div style={{ fontSize: 13, color: MUTED }}>These discounts apply automatically when customers select a cleaning frequency. Changes take effect immediately on the booking form.</div>
+      </div>
+
+      {/* Frequency Discounts */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: TEXT }}>Frequency Discounts</div>
+            <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>Discounts applied based on how often the customer books</div>
+          </div>
+          <button style={{ ...S.btn(BLUE, WHITE), padding: "9px 16px", fontSize: 13 }} onClick={() => setAddModal(true)}>+ Add Frequency</button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(auto-fill,minmax(260px,1fr))", gap: 12 }}>
+          {freqs.map(f => (
+            <div key={f.id} style={{ background: WHITE, borderRadius: 12, border: `1px solid ${editing === f.id ? BLUE : BORDER}`, overflow: "hidden", transition: "border .2s" }}>
+              <div style={{ background: f.disc > 0 ? `linear-gradient(135deg,${LIGHT_GREEN},${WHITE})` : BG, padding: "16px 20px", borderBottom: `1px solid ${BORDER}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 15, color: TEXT }}>{f.label}</div>
+                  <div style={{ fontSize: 26, fontWeight: 900, color: f.disc > 0 ? GREEN : MUTED, marginTop: 2 }}>
+                    {f.disc > 0 ? `${f.disc}% off` : "No discount"}
+                  </div>
+                </div>
+                <div style={{ fontSize: 32 }}>{f.disc > 0 ? "💸" : "💰"}</div>
+              </div>
+
+              {editing === f.id ? (
+                <div style={{ padding: "14px 16px" }}>
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={S.sLbl}>Label</div>
+                    <input value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} style={S.inp} />
+                  </div>
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={S.sLbl}>Discount (%)</div>
+                    <input type="number" min={0} max={100} value={form.disc} onChange={e => setForm(p => ({ ...p, disc: e.target.value }))} style={S.inp} />
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={saveEdit} style={{ ...S.btn(GREEN, WHITE), flex: 1, padding: "9px", fontSize: 13 }}>✅ Save</button>
+                    <button onClick={() => setEditing(null)} style={{ ...S.btn(BG, MUTED, BORDER), flex: 1, padding: "9px", fontSize: 13 }}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: "12px 14px", display: "flex", gap: 8 }}>
+                  <button onClick={() => { setEditing(f.id); setForm({ label: f.label, disc: f.disc }); }} style={{ ...S.btn(LIGHT_BLUE, BLUE), flex: 1, padding: "8px", fontSize: 13 }}>✏️ Edit</button>
+                  {f.id !== "once" && f.id !== "weekly" && f.id !== "fortnightly" && f.id !== "monthly"
+                    ? <button onClick={() => delFreq(f.id)} style={{ ...S.btn("#fdecea", "#e74c3c"), flex: 1, padding: "8px", fontSize: 13 }}>🗑 Delete</button>
+                    : <div style={{ flex: 1, background: BG, borderRadius: 9, padding: "8px", fontSize: 11, color: MUTED, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" }}>Default</div>
+                  }
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Room pricing info */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontWeight: 800, fontSize: 15, color: TEXT, marginBottom: 4 }}>Room-Based Pricing Rules</div>
+        <div style={{ fontSize: 12, color: MUTED, marginBottom: 14 }}>Extra charge added per additional bedroom or bathroom</div>
+        <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 12 }}>
+          {[
+            { icon: "🛏", label: "Extra Bedroom", sub: "Per additional bedroom beyond 1st", value: "A$20 each" },
+            { icon: "🛁", label: "Extra Bathroom", sub: "Per additional bathroom beyond 1st", value: "A$15 each" },
+          ].map(item => (
+            <div key={item.label} style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: "18px 20px", display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ width: 48, height: 48, background: LIGHT_BLUE, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{item.icon}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: 14, color: TEXT }}>{item.label}</div>
+                <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>{item.sub}</div>
+              </div>
+              <div style={{ fontWeight: 900, fontSize: 18, color: BLUE }}>{item.value}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#7a5c00", marginTop: 12 }}>
+          💡 To change room pricing amounts, update the <strong>calcPrice</strong> function values in your App.js code (currently A$20/bed, A$15/bath).
+        </div>
+      </div>
+
+      {/* NDIS GST info */}
+      <div style={{ background: LIGHT_GREEN, borderRadius: 12, border: `1px solid ${GREEN}33`, padding: "16px 20px" }}>
+        <div style={{ fontWeight: 800, fontSize: 14, color: GREEN, marginBottom: 6 }}>💙 NDIS Cleaning — GST Free</div>
+        <div style={{ fontSize: 13, color: TEXT }}>NDIS Cleaning is exempt from the 10% GST. All other services include GST automatically.</div>
+      </div>
+
+      {/* Add frequency modal */}
+      {addModal && (
+        <Modal title="Add New Frequency" onClose={() => setAddModal(false)}>
+          <div style={{ marginBottom: 14 }}>
+            <div style={S.sLbl}>Frequency Label</div>
+            <input value={addForm.label} onChange={e => setAddForm(p => ({ ...p, label: e.target.value }))} placeholder="e.g. Every 3 Weeks" style={S.inp} />
+          </div>
+          <div style={{ marginBottom: 20 }}>
+            <div style={S.sLbl}>Discount (%)</div>
+            <input type="number" min={0} max={100} value={addForm.disc} onChange={e => setAddForm(p => ({ ...p, disc: e.target.value }))} placeholder="0" style={S.inp} />
+          </div>
+          <button style={{ ...S.btn(BLUE, WHITE), width: "100%", padding: "14px" }} onClick={addFreq}>Add Frequency</button>
+        </Modal>
+      )}
+    </>
+  );
+}
+
 // ── ADMIN DASHBOARD ──
-function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClients, services, setServices, extras, setExtras, coupons, setCoupons, onLogout }) {
+function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClients, services, setServices, extras, setExtras, coupons, setCoupons, freqs, setFreqs, onLogout }) {
   const mobile = useIsMobile();
   const adminUser = (() => { try { const a = sessionStorage.getItem("adminUser"); return a ? JSON.parse(a) : null; } catch (e) { return null; } })();
   const isSuperAdmin = checkSuperAdmin(adminUser);
@@ -840,6 +971,7 @@ function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClien
     { id: "services", label: "Services", icon: "🏠" },
     { id: "extras", label: "Add-ons", icon: "✨" },
     { id: "coupons", label: "Coupons", icon: "🏷️" },
+    { id: "discounts", label: "Discounts", icon: "💸" },
   ];
 
   const filtBks = bookings.filter(b => {
@@ -1209,6 +1341,9 @@ function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClien
               ))}
             </div>
           </>}
+
+          {/* DISCOUNTS */}
+          {tab === "discounts" && <DiscountsTab freqs={freqs} setFreqs={setFreqs} mobile={mobile} />}
         </div>
       </div>
     </div>
@@ -1320,6 +1455,7 @@ export default function App() {
   const [services, setServices] = useState(SERVICES);
   const [extras, setExtras] = useState(EXTRAS);
   const [coupons, setCoupons] = useState(DEF_COUPONS);
+  const [freqs, setFreqs] = useState(FREQS);
 
   const isAdmin = !!adminUser;
 
@@ -1353,9 +1489,9 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginScreen clients={clients} onLogin={u => { setUser(u); sessionStorage.setItem("user", JSON.stringify(u)); window.location.href = "/client"; }} onAdmin={() => window.location.href = "/admin-login"} onGuest={() => window.location.href = "/book"} />} />
           <Route path="/admin-login" element={<AdminLogin onLogin={u => { setAdminUser(u); window.location.href = "/admin"; }} onBack={() => window.location.href = "/login"} />} />
-          <Route path="/book" element={<BookingApp user={user} services={services} extras={extras} coupons={coupons} onComplete={nb => setBookings(p => [...p, nb])} />} />
+          <Route path="/book" element={<BookingApp user={user} services={services} extras={extras} coupons={coupons} freqs={freqs} onComplete={nb => setBookings(p => [...p, nb])} />} />
           <Route path="/client" element={<PrivateRoute user={user}><ClientDash user={user} bookings={bookings} onLogout={() => { setUser(null); sessionStorage.removeItem("user"); window.location.href = "/login"; }} onBook={() => window.location.href = "/book"} /></PrivateRoute>} />
-          <Route path="/admin" element={<AdminRoute><AdminDash admins={admins} setAdmins={setAdmins} bookings={bookings} setBookings={setBookings} clients={clients} setClients={setClients} services={services} setServices={setServices} extras={extras} setExtras={setExtras} coupons={coupons} setCoupons={setCoupons} onLogout={() => { setAdminUser(null); sessionStorage.removeItem("adminUser"); window.location.href = "/login"; }} /></AdminRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminDash admins={admins} setAdmins={setAdmins} bookings={bookings} setBookings={setBookings} clients={clients} setClients={setClients} services={services} setServices={setServices} extras={extras} setExtras={setExtras} coupons={coupons} setCoupons={setCoupons} freqs={freqs} setFreqs={setFreqs} onLogout={() => { setAdminUser(null); sessionStorage.removeItem("adminUser"); window.location.href = "/login"; }} /></AdminRoute>} />
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
