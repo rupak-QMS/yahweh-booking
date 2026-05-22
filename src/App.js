@@ -259,7 +259,9 @@ function MobilePriceStrip({ total, step, onNext, onBack }) {
 }
 
 // ── BOOKING APP ──
-function BookingApp({ user, services, extras, coupons, freqs, onComplete }) {
+function BookingApp({ user, services, extras, coupons, freqs: freqsProp, onComplete }) {
+  // Always read fresh freqs from sessionStorage so admin changes apply live
+  const freqs = (() => { try { const f = sessionStorage.getItem("freqs"); return f ? JSON.parse(f) : freqsProp; } catch(e) { return freqsProp; } })();
   const mobile = useIsMobile();
   const [step, setStep] = useState(1);
   const [maxStep, setMaxStep] = useState(1);
@@ -816,19 +818,25 @@ function DiscountsTab({ freqs, setFreqs, mobile }) {
   const [addForm, setAddForm] = useState({ label: "", disc: 0 });
 
   function saveEdit() {
-    setFreqs(p => p.map(f => f.id === editing ? { ...f, ...form, disc: Number(form.disc) } : f));
+    const updated = freqs.map(f => f.id === editing ? { ...f, ...form, disc: Number(form.disc) } : f);
+    setFreqs(updated);
+    sessionStorage.setItem("freqs", JSON.stringify(updated));
     setEditing(null);
   }
 
   function addFreq() {
     if (!addForm.label) { alert("Label required"); return; }
-    setFreqs(p => [...p, { id: "freq" + uid(), label: addForm.label, disc: Number(addForm.disc), active: true }]);
+    const updated = [...freqs, { id: "freq" + uid(), label: addForm.label, disc: Number(addForm.disc), active: true }];
+    setFreqs(updated);
+    sessionStorage.setItem("freqs", JSON.stringify(updated));
     setAddForm({ label: "", disc: 0 });
     setAddModal(false);
   }
 
   function delFreq(id) {
-    setFreqs(p => p.filter(f => f.id !== id));
+    const updated = freqs.filter(f => f.id !== id);
+    setFreqs(updated);
+    sessionStorage.setItem("freqs", JSON.stringify(updated));
   }
 
   return (
@@ -1455,11 +1463,14 @@ export default function App() {
   const [services, setServices] = useState(SERVICES);
   const [extras, setExtras] = useState(EXTRAS);
   const [coupons, setCoupons] = useState(DEF_COUPONS);
-  const [freqs, setFreqs] = useState(FREQS);
+  const [freqs, setFreqs] = useState(() => {
+    try { const f = sessionStorage.getItem("freqs"); return f ? JSON.parse(f) : FREQS; } catch(e) { return FREQS; }
+  });
 
   const isAdmin = !!adminUser;
 
   useEffect(() => { sessionStorage.setItem("adminList", JSON.stringify(admins)); }, [admins]);
+  useEffect(() => { sessionStorage.setItem("freqs", JSON.stringify(freqs)); }, [freqs]);
 
   return (
     <BrowserRouter>
