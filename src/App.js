@@ -545,7 +545,7 @@ function ClientDash({ user, bookings, onLogout, onBook }) {
   const upcoming = mine.filter(b => ["Confirmed", "Pending"].includes(b.status));
   const past = mine.filter(b => ["Completed", "Cancelled"].includes(b.status));
   const totalSpent = past.filter(b => b.status === "Completed").reduce((s, b) => s + b.total, 0);
-  const nextBooking = [...upcoming].sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+  const nextBooking = [...upcoming].sort((a, b) => new Date(a.date) - new Date(b.date))[0]; // eslint-disable-line no-unused-vars
 
   return (
     <div style={{ background: BG, minHeight: "100vh", paddingBottom: mobile ? 90 : 40 }}>
@@ -684,7 +684,7 @@ function ClientForm({ data, onSave }) {
 function AdminDash({ bookings, setBookings, clients, setClients, services, setServices, extras, setExtras, coupons, setCoupons, freqs, setFreqs, onLogout }) {
   const mobile = useIsMobile();
   const adminUser = (() => { try { const a = sessionStorage.getItem("adminUser"); return a ? JSON.parse(a) : null; } catch (e) { return null; } })();
-  const isSuperAdmin = checkSuperAdmin(adminUser);
+  const isSuperAdmin = checkSuperAdmin(adminUser); // eslint-disable-line no-unused-vars
   const [tab, setTab] = useState("bookings");
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
@@ -694,7 +694,7 @@ function AdminDash({ bookings, setBookings, clients, setClients, services, setSe
   const [couponModal, setCouponModal] = useState(null);
   const [clientModal, setClientModal] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false); // eslint-disable-line no-unused-vars
 
   const SC = { Pending: "#e67e22", Confirmed: BLUE, Completed: GREEN, Cancelled: "#e74c3c" };
   const TABS = [
