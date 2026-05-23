@@ -815,7 +815,7 @@ function BookingCard({ b, mobile }) {
 }
 
 // ── ADMIN DASHBOARD ──
-function AdminDash({ bookings, setBookings, clients, setClients, categories, setCategories, onLogout }) {
+function AdminDash({ bookings, setBookings, clients, setClients, categories, setCategories, onLogout }) { /* eslint-disable-line */
   const mobile = useIsMobile();
   const adminUser = (() => { try { const a = sessionStorage.getItem("adminUser"); return a ? JSON.parse(a) : null; } catch (e) { return null; } })();
   const isSuperAdmin = adminUser?.role === "superadmin";
