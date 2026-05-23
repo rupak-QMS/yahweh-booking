@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "./supabase";
 
-// ── THEME ──
 const BLUE = "#1b75bb", GREEN = "#7eb842", LIGHT_BLUE = "#e8f3fb", LIGHT_GREEN = "#f0f9e8";
 const BORDER = "#e0e7ef", MUTED = "#7a90a8", TEXT = "#1a2533", BG = "#f5f7fa", WHITE = "#ffffff";
 
@@ -15,29 +14,26 @@ function useIsMobile() {
 const fmt = n => `A$${Number(n).toFixed(2)}`;
 const uid = () => Math.random().toString(36).slice(2, 8);
 
-// ── FREQUENCY × PERIOD VISIT TABLE ──
 const FREQUENCIES = [
-  { id: "weekly_1",  label: "Weekly (Once)",    multiplier: 4  },
-  { id: "weekly_2",  label: "Weekly (Twice)",    multiplier: 8  },
-  { id: "weekly_3",  label: "Weekly (3x)",       multiplier: 12 },
-  { id: "weekly_4",  label: "Weekly (4x)",       multiplier: 16 },
-  { id: "weekly_5",  label: "Weekly (5x)",       multiplier: 20 },
-  { id: "weekly_6",  label: "Weekly (6x)",       multiplier: 24 },
-  { id: "daily",     label: "Daily",             multiplier: 30 },
+  { id: "weekly_1",    label: "Weekly (Once)",  multiplier: 4  },
+  { id: "weekly_2",    label: "Weekly (Twice)",  multiplier: 8  },
+  { id: "weekly_3",    label: "Weekly (3x)",     multiplier: 12 },
+  { id: "weekly_4",    label: "Weekly (4x)",     multiplier: 16 },
+  { id: "weekly_5",    label: "Weekly (5x)",     multiplier: 20 },
+  { id: "weekly_6",    label: "Weekly (6x)",     multiplier: 24 },
+  { id: "daily",       label: "Daily",           multiplier: 30 },
   { id: "fortnightly", label: "Fortnightly",     multiplier: 2  },
-  { id: "every3w",   label: "Every 3 Weeks",     multiplier: null }, // special
-  { id: "monthly",   label: "Monthly",           multiplier: 1  },
+  { id: "every3w",     label: "Every 3 Weeks",   multiplier: null },
+  { id: "monthly",     label: "Monthly",         multiplier: 1  },
 ];
 
-const EVERY3W_VISITS = [1,2,4,5,6,8,9,10,12,13,14,16,17,18,20,21,22,24,25,26,28,29,30,32,33,34,36,37,38,40,41,42,44,45,46,48];
+const EVERY3W = [1,2,4,5,6,8,9,10,12,13,14,16,17,18,20,21,22,24,25,26,28,29,30,32,33,34,36,37,38,40,41,42,44,45,46,48];
 
 function getVisits(freqId, months) {
-  const m = months - 1; // 0-indexed
   if (!freqId || !months) return 0;
-  if (freqId === "every3w") return EVERY3W_VISITS[m] || 0;
-  const freq = FREQUENCIES.find(f => f.id === freqId);
-  if (!freq) return 0;
-  return freq.multiplier * months;
+  if (freqId === "every3w") return EVERY3W[months - 1] || 0;
+  const f = FREQUENCIES.find(x => x.id === freqId);
+  return f ? f.multiplier * months : 0;
 }
 
 const PERIODS = Array.from({ length: 36 }, (_, i) => ({ value: i + 1, label: `${i + 1} Month${i > 0 ? "s" : ""}` }));
@@ -56,23 +52,23 @@ const HARDCODED_ADMINS = [
   { id: "a001", name: "Alex Yogarajah", email: "alex@yahwehpc.com.au", password: "Yahweh219@#", role: "admin" },
 ];
 
-const S = {
-  panel: m => ({ background: WHITE, borderRadius: m ? 12 : 16, border: `1px solid ${BORDER}`, padding: m ? 16 : "28px 32px", marginBottom: m ? 12 : 20, boxShadow: "0 2px 12px rgba(27,117,187,0.06)" }),
-  inp: { width: "100%", border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: "11px 14px", fontSize: 14, outline: "none", fontFamily: "inherit", color: TEXT, background: WHITE, boxSizing: "border-box" },
-  btn: (bg, col, border) => ({ background: bg, color: col, border: border ? `1.5px solid ${border}` : "none", borderRadius: 9, padding: "10px 22px", fontSize: 13, fontWeight: 700, cursor: "pointer" }),
-  sLbl: { fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 6, marginTop: 14 },
-  secTitle: m => ({ fontSize: m ? 14 : 17, fontWeight: 800, color: TEXT, marginBottom: m ? 12 : 18, paddingBottom: m ? 8 : 12, borderBottom: `2px solid ${BORDER}` }),
-};
-
 const STATUS_CONFIG = {
-  Pending: { color: "#e67e22", bg: "#fff8f0" },
-  Confirmed: { color: BLUE, bg: LIGHT_BLUE },
-  Completed: { color: GREEN, bg: LIGHT_GREEN },
+  Pending:   { color: "#e67e22", bg: "#fff8f0" },
+  Confirmed: { color: BLUE,      bg: LIGHT_BLUE },
+  Completed: { color: GREEN,     bg: LIGHT_GREEN },
   Cancelled: { color: "#e74c3c", bg: "#fdecea" },
 };
 
 const TIME_SLOTS = ["7:00 AM","8:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","2:00 PM","3:00 PM"];
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+const S = {
+  panel: m => ({ background: WHITE, borderRadius: m ? 12 : 16, border: `1px solid ${BORDER}`, padding: m ? 16 : "28px 32px", marginBottom: m ? 12 : 20, boxShadow: "0 2px 12px rgba(27,117,187,0.06)" }),
+  inp: { width: "100%", border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: "11px 14px", fontSize: 14, outline: "none", fontFamily: "inherit", color: TEXT, background: WHITE, boxSizing: "border-box" },
+  btn: (bg, col, bdr) => ({ background: bg, color: col, border: bdr ? `1.5px solid ${bdr}` : "none", borderRadius: 9, padding: "10px 22px", fontSize: 13, fontWeight: 700, cursor: "pointer" }),
+  sLbl: { fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 6, marginTop: 14 },
+  secTitle: m => ({ fontSize: m ? 14 : 17, fontWeight: 800, color: TEXT, marginBottom: m ? 12 : 18, paddingBottom: m ? 8 : 12, borderBottom: `2px solid ${BORDER}` }),
+};
 
 // ── SHARED COMPONENTS ──
 function Logo({ small }) {
@@ -155,14 +151,12 @@ function MobileBottomNav({ user, isAdmin }) {
   );
 }
 
-// ── QUOTATION SIDEBAR ──
-function QuoteSidebar({ items, addons, freqId, period, couponPct, isNDIS, onApplyCoupon }) {
+// ── QUOTE SIDEBAR ──
+function QuoteSidebar({ items, addons, couponPct, isNDIS, onApplyCoupon }) {
   const [coupon, setCoupon] = useState("");
   const [couponMsg, setCouponMsg] = useState(null);
-  const visits = getVisits(freqId, period);
-
-  const itemsTotal = items.reduce((s, i) => s + (Number(i.unit_price) * Number(i.qty)), 0);
-  const addonsTotal = addons.reduce((s, a) => s + (Number(a.unit_price) * Number(a.qty)), 0);
+  const itemsTotal = items.reduce((s, i) => s + Number(i.unit_price) * Number(i.qty), 0);
+  const addonsTotal = addons.reduce((s, a) => s + Number(a.unit_price) * Number(a.qty), 0);
   const subtotal = itemsTotal + addonsTotal;
   const couponDisc = couponPct > 0 ? Math.round(subtotal * couponPct / 100) : 0;
   const afterDisc = subtotal - couponDisc;
@@ -171,7 +165,7 @@ function QuoteSidebar({ items, addons, freqId, period, couponPct, isNDIS, onAppl
 
   async function applyC() {
     const { data } = await supabase.from("coupons").select("*").eq("code", coupon.toUpperCase()).eq("is_active", true).single();
-    if (data) { onApplyCoupon(data.discount_value, data.id); setCouponMsg({ ok: true, text: `✓ ${data.discount_value}% off applied!` }); }
+    if (data) { onApplyCoupon(data.discount_value, data.id); setCouponMsg({ ok: true, text: `✓ ${data.discount_value}% off!` }); }
     else setCouponMsg({ ok: false, text: "✗ Invalid code." });
   }
 
@@ -183,27 +177,19 @@ function QuoteSidebar({ items, addons, freqId, period, couponPct, isNDIS, onAppl
         <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>{isNDIS ? "GST Free (NDIS)" : "Inc. 10% GST"}</div>
       </div>
       <div style={{ padding: 18 }}>
-        {visits > 0 && (
-          <div style={{ background: LIGHT_BLUE, borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13 }}>
-            <span style={{ color: MUTED }}>Total Visits: </span>
-            <span style={{ fontWeight: 900, color: BLUE, fontSize: 18 }}>{visits}</span>
-            <span style={{ color: MUTED, fontSize: 11 }}> visits over {period} month{period > 1 ? "s" : ""}</span>
-          </div>
-        )}
-
         {items.length === 0 && addons.length === 0
           ? <div style={{ color: MUTED, fontSize: 13, textAlign: "center", padding: "16px 0" }}>Add items to see pricing</div>
           : <>
-            {items.map((it, i) => (
+            {items.filter(i => i.name).map((it, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
-                <span style={{ color: MUTED, maxWidth: "60%", lineHeight: 1.3 }}>{it.name || "Item"}</span>
-                <span style={{ fontWeight: 700, color: TEXT }}>{fmt(Number(it.unit_price) * Number(it.qty) * (visits || 1))}</span>
+                <span style={{ color: MUTED, maxWidth: "60%", lineHeight: 1.3 }}>{it.name}</span>
+                <span style={{ fontWeight: 700 }}>{fmt(Number(it.unit_price) * Number(it.qty))}</span>
               </div>
             ))}
-            {addons.map((a, i) => (
+            {addons.filter(a => a.name).map((a, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
-                <span style={{ color: MUTED, maxWidth: "60%", lineHeight: 1.3 }}>+ {a.name || "Add-on"}</span>
-                <span style={{ fontWeight: 700, color: GREEN }}>+{fmt(Number(a.unit_price) * Number(a.qty) * (visits || 1))}</span>
+                <span style={{ color: MUTED, maxWidth: "60%", lineHeight: 1.3 }}>+ {a.name}</span>
+                <span style={{ fontWeight: 700, color: GREEN }}>+{fmt(Number(a.unit_price) * Number(a.qty))}</span>
               </div>
             ))}
             <div style={{ background: BG, borderRadius: 10, padding: "12px 14px", marginTop: 12 }}>
@@ -215,7 +201,6 @@ function QuoteSidebar({ items, addons, freqId, period, couponPct, isNDIS, onAppl
             </div>
           </>
         }
-
         <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
           <input value={coupon} onChange={e => setCoupon(e.target.value.toUpperCase())} placeholder="Promo code" style={{ ...S.inp, flex: 1, fontSize: 13, padding: "9px 12px" }} />
           <button onClick={applyC} style={S.btn(BLUE, WHITE)}>Apply</button>
@@ -229,7 +214,7 @@ function QuoteSidebar({ items, addons, freqId, period, couponPct, isNDIS, onAppl
   );
 }
 
-// ── BOOKING / QUOTATION FORM ──
+// ── BOOKING APP ──
 function BookingApp({ user, categories, onComplete }) {
   const mobile = useIsMobile();
   const [step, setStep] = useState(1);
@@ -238,18 +223,20 @@ function BookingApp({ user, categories, onComplete }) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  // Quote state
+  // Category & items state (prefixed to avoid conflicts)
   const [selCat, setSelCat] = useState(null);
-  const [catItems, setCatItems] = useState([]);
-  const [catAddons, setCatAddons] = useState([]);
+  const [bkItems, setBkItems] = useState([]);   // items for selected category
+  const [bkAddons, setBkAddons] = useState([]); // addons for selected category
+
+  // Quote state
   const [freqId, setFreqId] = useState("");
   const [period, setPeriod] = useState(1);
-  const [quoteItems, setQuoteItems] = useState([{ id: uid(), item_id: "", name: "", unit_type: "", unit_price: 0, qty: 1 }]);
+  const [quoteItems, setQuoteItems] = useState([{ id: uid(), item_id: "", name: "", unit_type: "", unit_price: 0, qty: 1, defQty: 1 }]);
   const [quoteAddons, setQuoteAddons] = useState([]);
   const [couponPct, setCouponPct] = useState(0);
   const [couponId, setCouponId] = useState(null);
 
-  // Schedule + client
+  // Schedule & client
   const [date, setDate] = useState(null);
   const [time, setTime] = useState("9:00 AM");
   const [client, setClient] = useState({
@@ -262,53 +249,63 @@ function BookingApp({ user, categories, onComplete }) {
   const visits = getVisits(freqId, period);
   const isNDIS = selCat?.name?.includes("NDIS");
 
-  const itemsTotal = quoteItems.reduce((s, i) => s + (Number(i.unit_price) * Number(i.qty)), 0);
-  const addonsTotal = quoteAddons.reduce((s, a) => s + (Number(a.unit_price) * Number(a.qty)), 0);
+  // Load items when category selected
+  useEffect(() => {
+    if (!selCat) return;
+    supabase.from("items").select("*").eq("category_id", selCat.id).eq("is_active", true).order("sort_order")
+      .then(({ data }) => setBkItems(data || []));
+    supabase.from("addon_items").select("*").eq("category_id", selCat.id).eq("is_active", true).order("sort_order")
+      .then(({ data }) => setBkAddons(data || []));
+    setQuoteItems([{ id: uid(), item_id: "", name: "", unit_type: "", unit_price: 0, qty: 1, defQty: 1 }]);
+    setQuoteAddons([]);
+  }, [selCat]);
+
+  // Recalculate qty when visits change
+  useEffect(() => {
+    if (!visits) return;
+    setQuoteItems(p => p.map(it => it.item_id && it.defQty ? { ...it, qty: it.defQty * visits } : it));
+    setQuoteAddons(p => p.map(a => a.addon_id && a.defQty ? { ...a, qty: a.defQty * visits } : a));
+  }, [visits]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Price calc
+  const itemsTotal = quoteItems.reduce((s, i) => s + Number(i.unit_price) * Number(i.qty), 0);
+  const addonsTotal = quoteAddons.reduce((s, a) => s + Number(a.unit_price) * Number(a.qty), 0);
   const subtotal = itemsTotal + addonsTotal;
   const couponDisc = couponPct > 0 ? Math.round(subtotal * couponPct / 100) : 0;
   const afterDisc = subtotal - couponDisc;
   const gst = isNDIS ? 0 : Math.round(afterDisc * 0.10 * 100) / 100;
   const total = afterDisc + gst;
 
-  // Auto-update qty when visits change
-  useEffect(() => {
-    if (!visits) return;
-    setQuoteItems(p => p.map(it => ({
-      ...it,
-      qty: it.item_id ? (catItems.find(c => c.id === it.item_id)?.default_quantity || 1) : it.qty
-    })));
-    setQuoteAddons(p => p.map(a => ({
-      ...a,
-      qty: a.addon_id ? (catAddons.find(c => c.id === a.addon_id)?.default_quantity || 1) : a.qty
-    })));
-  }, [visits]); // eslint-disable-line react-hooks/exhaustive-deps
-
   function updateItem(idx, field, val) {
     setQuoteItems(p => p.map((it, i) => {
       if (i !== idx) return it;
-              if (field === "item_id") {
-        const found = catItems.find(c => c.id === val);
-        return found ? { ...it, item_id: val, name: found.name, unit_type: found.unit_type, unit_price: found.unit_price, qty: found.default_quantity || 1 } : { ...it, item_id: val };
+      if (field === "item_id") {
+        const found = bkItems.find(c => c.id === val);
+        const defQty = found?.default_quantity || 1;
+        const v = getVisits(freqId, period) || 1;
+        return found ? { ...it, item_id: val, name: found.name, unit_type: found.unit_type, unit_price: found.unit_price, qty: defQty * v, defQty } : { ...it, item_id: val };
       }
       return { ...it, [field]: val };
     }));
   }
 
-  function addItem() { setQuoteItems(p => [...p, { id: uid(), item_id: "", name: "", unit_type: "", unit_price: 0, qty: 1 }]); }
-  function removeItem(idx) { setQuoteItems(p => p.filter((_, i) => i !== idx)); }
-
-  function addAddon() { setQuoteAddons(p => [...p, { id: uid(), addon_id: "", name: "", unit_type: "", unit_price: 0, qty: 1 }]); }
-  function removeAddon(idx) { setQuoteAddons(p => p.filter((_, i) => i !== idx)); }
   function updateAddon(idx, field, val) {
     setQuoteAddons(p => p.map((a, i) => {
       if (i !== idx) return a;
       if (field === "addon_id") {
-        const found = catAddons.find(c => c.id === val);
-        return found ? { ...a, addon_id: val, name: found.name, unit_type: found.unit_type, unit_price: found.unit_price, qty: found.default_quantity || 1 } : { ...a, addon_id: val };
+        const found = bkAddons.find(c => c.id === val);
+        const defQty = found?.default_quantity || 1;
+        const v = getVisits(freqId, period) || 1;
+        return found ? { ...a, addon_id: val, name: found.name, unit_type: found.unit_type, unit_price: found.unit_price, qty: defQty * v, defQty } : { ...a, addon_id: val };
       }
       return { ...a, [field]: val };
     }));
   }
+
+  function addItem() { setQuoteItems(p => [...p, { id: uid(), item_id: "", name: "", unit_type: "", unit_price: 0, qty: 1, defQty: 1 }]); }
+  function removeItem(idx) { setQuoteItems(p => p.filter((_, i) => i !== idx)); }
+  function addAddon() { setQuoteAddons(p => [...p, { id: uid(), addon_id: "", name: "", unit_type: "", unit_price: 0, qty: 1, defQty: 1 }]); }
+  function removeAddon(idx) { setQuoteAddons(p => p.filter((_, i) => i !== idx)); }
 
   const setC = k => e => setClient(p => ({ ...p, [k]: e.target.value }));
 
@@ -316,13 +313,13 @@ function BookingApp({ user, categories, onComplete }) {
   const VALS = [
     null,
     () => !!selCat,
-    () => quoteItems.some(i => i.item_id) && !!freqId && !!period,
+    () => quoteItems.some(i => i.item_id) && !!freqId && period > 0,
     () => !!date && !!time,
     () => !!(client.firstName && client.lastName && client.email && client.phone && client.address && client.suburb && client.postcode),
     () => !!(client.cardName && client.cardNum.length >= 16 && client.cardExp && client.cardCvv.length >= 3),
     () => true,
   ];
-  const ERRS = ["","Please select a category.","Please add at least one item, frequency and period.","Please select a date and time.","Please fill all required fields.","Please complete payment details.",""];
+  const ERRS = ["", "Please select a category.", "Please add at least one item, frequency and period.", "Please select a date and time.", "Please fill all required fields.", "Please complete payment details.", ""];
 
   function next() {
     if (!VALS[step]()) { setError(ERRS[step]); window.scrollTo(0, 0); return; }
@@ -336,14 +333,13 @@ function BookingApp({ user, categories, onComplete }) {
     try {
       const fullName = [client.firstName, client.lastName].join(" ");
       const address = [client.address, client.suburb, client.state, client.postcode].filter(Boolean).join(", ");
-      const { data: clientData, error: cErr } = await supabase
-        .from("clients")
+      const { data: clientData, error: cErr } = await supabase.from("clients")
         .upsert({ full_name: fullName, email: client.email, phone: client.phone, address: client.address, city: client.suburb, state: client.state, zip: client.postcode, notes: client.notes }, { onConflict: "email" })
         .select().single();
       if (cErr) throw cErr;
 
       const firstItem = quoteItems.find(i => i.item_id);
-      const { data: bookingData, error: bErr } = await supabase.from("bookings").insert({
+      const { data: bkData, error: bErr } = await supabase.from("bookings").insert({
         client_id: clientData.id,
         category_id: selCat?.id,
         item_id: firstItem?.item_id || null,
@@ -354,33 +350,20 @@ function BookingApp({ user, categories, onComplete }) {
         scheduled_time: time,
         quantity: visits,
         status: "pending",
-        subtotal,
-        discount_amount: couponDisc,
-        total_price: total,
-        notes: client.notes,
+        subtotal, discount_amount: couponDisc, total_price: total, notes: client.notes,
       }).select().single();
       if (bErr) throw bErr;
 
       if (couponId) await supabase.rpc("increment_coupon_uses", { coupon_id: couponId });
 
-      const bookingId = `YPC${bookingData.id.slice(0, 6).toUpperCase()}`;
+      const bookingId = `YPC${bkData.id.slice(0, 6).toUpperCase()}`;
       const freq = FREQUENCIES.find(f => f.id === freqId);
 
       try {
         await fetch("https://nsvzbhnqmyqpsehueqhu.supabase.co/functions/v1/send-booking-email", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
-            type: "both",
-            booking: {
-              bookingId, clientName: fullName, clientEmail: client.email, phone: client.phone,
-              service: firstItem?.name || selCat?.name,
-              date: date.toISOString().split("T")[0], time, address,
-              freq: freq?.label || freqId,
-              extras: quoteAddons.filter(a => a.name).map(a => a.name),
-              notes: client.notes, subtotal, discountAmount: couponDisc, gst, total, isNDIS,
-            },
-          }),
+          body: JSON.stringify({ type: "both", booking: { bookingId, clientName: fullName, clientEmail: client.email, phone: client.phone, service: firstItem?.name || selCat?.name, date: date.toISOString().split("T")[0], time, address, freq: freq?.label || freqId, extras: quoteAddons.filter(a => a.name).map(a => a.name), notes: client.notes, subtotal, discountAmount: couponDisc, gst, total, isNDIS } }),
         });
       } catch (e) { console.warn("Email failed:", e); }
 
@@ -396,7 +379,7 @@ function BookingApp({ user, categories, onComplete }) {
   const dates = Array.from({ length: 21 }, (_, i) => { const d = new Date(today); d.setDate(today.getDate() + i); return d; });
 
   if (done) return (
-    <div style={{ maxWidth: 540, margin: mobile ? "0 auto" : "48px auto", padding: 16, paddingBottom: mobile ? 90 : 16 }}>
+    <div style={{ maxWidth: 540, margin: "48px auto", padding: 16 }}>
       <div style={{ ...S.panel(mobile), textAlign: "center", padding: "52px 36px" }}>
         <div style={{ width: 72, height: 72, background: LIGHT_GREEN, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 36 }}>✅</div>
         <h2 style={{ fontSize: 26, fontWeight: 900, color: GREEN, marginBottom: 8 }}>Booking Confirmed!</h2>
@@ -437,7 +420,7 @@ function BookingApp({ user, categories, onComplete }) {
               <div style={S.secTitle(mobile)}>Select Service Category</div>
               <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(auto-fill,minmax(200px,1fr))", gap: 14 }}>
                 {categories.map(cat => { const a = selCat?.id === cat.id; return (
-                  <div key={cat.id} onClick={() => setSelCat(cat)} style={{ border: `2px solid ${a ? BLUE : BORDER}`, borderRadius: 14, padding: "22px 16px", textAlign: "center", cursor: "pointer", background: a ? LIGHT_BLUE : WHITE, transition: "all 0.15s" }}>
+                  <div key={cat.id} onClick={() => setSelCat(cat)} style={{ border: `2px solid ${a ? BLUE : BORDER}`, borderRadius: 14, padding: "22px 16px", textAlign: "center", cursor: "pointer", background: a ? LIGHT_BLUE : WHITE }}>
                     <div style={{ fontSize: 40, marginBottom: 10 }}>{cat.icon}</div>
                     <div style={{ fontSize: 14, fontWeight: 800, color: a ? BLUE : TEXT }}>{cat.name}</div>
                     {a && <div style={{ marginTop: 8 }}><span style={{ background: BLUE, color: WHITE, borderRadius: 50, padding: "2px 10px", fontSize: 10, fontWeight: 800 }}>✓ Selected</span></div>}
@@ -447,10 +430,10 @@ function BookingApp({ user, categories, onComplete }) {
             </div>
           )}
 
-          {/* STEP 2: Quotation Builder */}
+          {/* STEP 2: Quote Builder */}
           {step === 2 && (
             <>
-              {/* Frequency + Period */}
+              {/* Schedule */}
               <div style={S.panel(mobile)}>
                 <div style={S.secTitle(mobile)}>Service Schedule</div>
                 <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
@@ -469,7 +452,7 @@ function BookingApp({ user, categories, onComplete }) {
                   </div>
                   <div>
                     <div style={S.sLbl}>Total Visits</div>
-                    <div style={{ border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: "11px 14px", background: LIGHT_BLUE, fontWeight: 900, fontSize: 20, color: BLUE, textAlign: "center" }}>
+                    <div style={{ border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: "11px 14px", background: LIGHT_BLUE, fontWeight: 900, fontSize: 22, color: BLUE, textAlign: "center" }}>
                       {visits > 0 ? visits : "—"}
                       {visits > 0 && <div style={{ fontSize: 11, color: MUTED, fontWeight: 500 }}>visits</div>}
                     </div>
@@ -477,119 +460,101 @@ function BookingApp({ user, categories, onComplete }) {
                 </div>
               </div>
 
-              {/* Items Table */}
+              {/* Items */}
               <div style={S.panel(mobile)}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <div style={S.secTitle(mobile)}>Items</div>
                   <button onClick={addItem} style={{ ...S.btn(BLUE, WHITE), padding: "8px 16px", fontSize: 12 }}>+ Add Item</button>
                 </div>
-
-                {/* Table Header */}
-                <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "3fr 1fr 1fr 1fr auto", gap: 8, marginBottom: 8, padding: "0 4px" }}>
-                  {!mobile && ["Item / Service", "Unit Type", "Qty", "Unit Price", ""].map((h, i) => (
-                    <div key={i} style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1 }}>{h}</div>
-                  ))}
-                </div>
-
+                {!mobile && (
+                  <div style={{ display: "grid", gridTemplateColumns: "3fr 120px 120px 130px 100px", gap: 8, marginBottom: 8, padding: "0 14px" }}>
+                    {["Item / Service", "Unit Type", "Qty", "Unit Price ($)", "Amount"].map(h => (
+                      <div key={h} style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1 }}>{h}</div>
+                    ))}
+                  </div>
+                )}
                 {quoteItems.map((item, idx) => (
                   <div key={item.id} style={{ marginBottom: 10, background: BG, borderRadius: 12, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderBottom: `1px solid ${BORDER}`, background: WHITE }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 14px", background: WHITE, borderBottom: `1px solid ${BORDER}` }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: BLUE }}>Item #{idx + 1}</span>
-                      {quoteItems.length > 1 && <button onClick={() => removeItem(idx)} style={{ background: "#fdecea", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 13, fontWeight: 800, borderRadius: 6, padding: "4px 10px", lineHeight: 1 }}>✕ Remove</button>}
+                      {quoteItems.length > 1 && <button onClick={() => removeItem(idx)} style={{ background: "#fdecea", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 12, fontWeight: 800, borderRadius: 6, padding: "3px 10px" }}>✕ Remove</button>}
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "3fr 120px 120px 130px 100px", gap: 10, padding: "12px 14px", alignItems: "end" }}>
                       <div>
-                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Item / Service</div>
+                        {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Item / Service</div>}
                         <select value={item.item_id} onChange={e => updateItem(idx, "item_id", e.target.value)} style={S.inp}>
                           <option value="">Select item…</option>
-                          {bookingCatItems.map(ci => <option key={ci.id} value={ci.id}>{ci.name}</option>)}
+                          {bkItems.map(ci => <option key={ci.id} value={ci.id}>{ci.name}</option>)}
                         </select>
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Type</div>
+                        {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Type</div>}
                         <div style={{ border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: "11px 10px", fontSize: 12, color: MUTED, background: WHITE, minHeight: 44 }}>{item.unit_type || "—"}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Qty</div>
-                        <input type="number" min={1} value={item.qty} onChange={e => updateItem(idx, "qty", e.target.value)} style={S.inp} />
+                        {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Qty</div>}
+                        <input type="number" min={0} step={0.5} value={item.qty} onChange={e => updateItem(idx, "qty", e.target.value)} style={S.inp} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Price ($)</div>
+                        {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Price ($)</div>}
                         <input type="number" min={0} step={0.01} value={item.unit_price} onChange={e => updateItem(idx, "unit_price", e.target.value)} style={S.inp} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Amount</div>
-                        <div style={{ background: LIGHT_BLUE, border: `1.5px solid ${BLUE}22`, borderRadius: 9, padding: "11px 10px", fontWeight: 900, fontSize: 14, color: BLUE, textAlign: "center" }}>{fmt(Number(item.unit_price) * Number(item.qty))}</div>
+                        {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Amount</div>}
+                        <div style={{ background: LIGHT_BLUE, border: `1.5px solid ${BLUE}22`, borderRadius: 9, padding: "11px 10px", fontWeight: 900, fontSize: 13, color: BLUE, textAlign: "center" }}>{fmt(Number(item.unit_price) * Number(item.qty))}</div>
                       </div>
                     </div>
                   </div>
                 ))}
-
-                {/* Items subtotal */}
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
                   <div style={{ background: LIGHT_BLUE, borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 800, color: BLUE }}>Items Total: {fmt(itemsTotal)}</div>
                 </div>
               </div>
 
-              {/* Addon Items Table */}
+              {/* Addons */}
               <div style={S.panel(mobile)}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <div style={S.secTitle(mobile)}>Add-on Items</div>
                   <button onClick={addAddon} style={{ ...S.btn(GREEN, WHITE), padding: "8px 16px", fontSize: 12 }}>+ Add Addon</button>
                 </div>
-
                 {quoteAddons.length === 0 && (
-                  <div style={{ textAlign: "center", padding: "20px", color: MUTED, fontSize: 13, background: BG, borderRadius: 10, border: `1px dashed ${BORDER}` }}>
-                    No add-ons added. Click "+ Add Addon" to include extras.
-                  </div>
+                  <div style={{ textAlign: "center", padding: "20px", color: MUTED, fontSize: 13, background: BG, borderRadius: 10, border: `1px dashed ${BORDER}` }}>No add-ons added yet.</div>
                 )}
-
-                {quoteAddons.length > 0 && (
-                  <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "3fr 1fr 1fr 1fr auto", gap: 8, marginBottom: 8, padding: "0 4px" }}>
-                    {!mobile && ["Add-on Item", "Unit Type", "Qty", "Unit Price", ""].map((h, i) => (
-                      <div key={i} style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1 }}>{h}</div>
-                    ))}
-                  </div>
-                )}
-
                 {quoteAddons.map((addon, idx) => (
                   <div key={addon.id} style={{ marginBottom: 10, background: LIGHT_GREEN, borderRadius: 12, border: `1px solid ${GREEN}33`, overflow: "hidden" }}>
-                    {/* Row header with delete */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderBottom: `1px solid ${GREEN}22` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 14px", borderBottom: `1px solid ${GREEN}22` }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: GREEN }}>Add-on #{idx + 1}</span>
-                      <button onClick={() => removeAddon(idx)} style={{ background: "#fdecea", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 13, fontWeight: 800, borderRadius: 6, padding: "4px 10px", lineHeight: 1 }}>✕ Remove</button>
+                      <button onClick={() => removeAddon(idx)} style={{ background: "#fdecea", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 12, fontWeight: 800, borderRadius: 6, padding: "3px 10px" }}>✕ Remove</button>
                     </div>
-                    {/* Fields */}
                     <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "3fr 120px 120px 130px 100px", gap: 10, padding: "12px 14px", alignItems: "end" }}>
                       <div>
-                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Add-on Item</div>
+                        {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Add-on Item</div>}
                         <select value={addon.addon_id} onChange={e => updateAddon(idx, "addon_id", e.target.value)} style={S.inp}>
                           <option value="">Select add-on…</option>
-                          {bookingCatAddons.map(ca => <option key={ca.id} value={ca.id}>{ca.name}</option>)}
+                          {bkAddons.map(ca => <option key={ca.id} value={ca.id}>{ca.name}</option>)}
                         </select>
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Type</div>
+                        {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Type</div>}
                         <div style={{ border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: "11px 10px", fontSize: 12, color: MUTED, background: WHITE, minHeight: 44 }}>{addon.unit_type || "—"}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Qty</div>
-                        <input type="number" min={1} value={addon.qty} onChange={e => updateAddon(idx, "qty", e.target.value)} style={S.inp} />
+                        {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Qty</div>}
+                        <input type="number" min={0} step={0.5} value={addon.qty} onChange={e => updateAddon(idx, "qty", e.target.value)} style={S.inp} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Price ($)</div>
+                        {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Price ($)</div>}
                         <input type="number" min={0} step={0.01} value={addon.unit_price} onChange={e => updateAddon(idx, "unit_price", e.target.value)} style={S.inp} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Amount</div>
-                        <div style={{ background: WHITE, border: `1.5px solid ${GREEN}44`, borderRadius: 9, padding: "11px 10px", fontWeight: 900, fontSize: 14, color: GREEN, textAlign: "center" }}>+{fmt(Number(addon.unit_price) * Number(addon.qty))}</div>
+                        {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Amount</div>}
+                        <div style={{ background: WHITE, border: `1.5px solid ${GREEN}44`, borderRadius: 9, padding: "11px 10px", fontWeight: 900, fontSize: 13, color: GREEN, textAlign: "center" }}>+{fmt(Number(addon.unit_price) * Number(addon.qty))}</div>
                       </div>
                     </div>
                   </div>
                 ))}
-
                 {quoteAddons.length > 0 && (
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
                     <div style={{ background: LIGHT_GREEN, borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 800, color: GREEN }}>Add-ons Total: {fmt(addonsTotal)}</div>
                   </div>
                 )}
@@ -601,35 +566,6 @@ function BookingApp({ user, categories, onComplete }) {
           {step === 3 && (
             <div style={S.panel(mobile)}>
               <div style={S.secTitle(mobile)}>Choose Start Date & Time</div>
-
-              {/* Period selector first */}
-              <div style={{ background: LIGHT_BLUE, borderRadius: 12, padding: "16px 20px", marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>📅 Service Period</div>
-                <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 6 }}>Service Period</div>
-                    <select value={period} onChange={e => setPeriod(Number(e.target.value))} style={S.inp}>
-                      {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 6 }}>Frequency</div>
-                    <select value={freqId} onChange={e => setFreqId(e.target.value)} style={S.inp}>
-                      <option value="">Select…</option>
-                      {FREQUENCIES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 6 }}>Total Visits</div>
-                    <div style={{ border: `1.5px solid ${BLUE}44`, borderRadius: 9, padding: "11px 14px", background: WHITE, fontWeight: 900, fontSize: 20, color: BLUE, textAlign: "center" }}>
-                      {visits > 0 ? visits : "—"}
-                      {visits > 0 && <div style={{ fontSize: 10, color: MUTED, fontWeight: 500 }}>visits</div>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Date picker */}
               <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>📅 Start Date</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: mobile ? 4 : 6, marginBottom: 20 }}>
                 {DAYS.map(d => <div key={d} style={{ textAlign: "center", fontSize: 10, color: MUTED, fontWeight: 800, padding: "3px 0" }}>{d}</div>)}
@@ -640,29 +576,25 @@ function BookingApp({ user, categories, onComplete }) {
                   </div>
                 );})}
               </div>
-
-              {/* Time picker */}
               <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>🕐 Start Time</div>
               <div style={{ display: "grid", gridTemplateColumns: mobile ? "repeat(3,1fr)" : "repeat(auto-fill,minmax(100px,1fr))", gap: mobile ? 8 : 10 }}>
                 {TIME_SLOTS.map(t => { const a = time === t; return <div key={t} onClick={() => setTime(t)} style={{ border: `2px solid ${a ? BLUE : BORDER}`, borderRadius: 10, padding: mobile ? "11px 6px" : 12, textAlign: "center", cursor: "pointer", background: a ? BLUE : WHITE, color: a ? WHITE : MUTED, fontWeight: a ? 800 : 500, fontSize: mobile ? 12 : 13 }}>{t}</div>; })}
               </div>
-
-              {/* Confirmation */}
               {date && (
                 <div style={{ marginTop: 16, background: LIGHT_GREEN, border: `1px solid ${GREEN}44`, borderRadius: 12, padding: "14px 18px" }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: GREEN, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>✅ Schedule Confirmed</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13 }}>
-                    <div><span style={{ color: MUTED }}>Start Date: </span><strong>{date.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "long", year: "numeric" })}</strong></div>
+                    <div><span style={{ color: MUTED }}>Start: </span><strong>{date.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "long", year: "numeric" })}</strong></div>
                     <div><span style={{ color: MUTED }}>Time: </span><strong>{time}</strong></div>
                     <div><span style={{ color: MUTED }}>Period: </span><strong>{period} month{period > 1 ? "s" : ""}</strong></div>
-                    <div><span style={{ color: MUTED }}>Total Visits: </span><strong style={{ color: BLUE, fontSize: 15 }}>{visits} visits</strong></div>
+                    <div><span style={{ color: MUTED }}>Visits: </span><strong style={{ color: BLUE, fontSize: 15 }}>{visits}</strong></div>
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* STEP 4: Client Details */}
+          {/* STEP 4: Details */}
           {step === 4 && (
             <div style={S.panel(mobile)}>
               <div style={S.secTitle(mobile)}>Your Details</div>
@@ -690,6 +622,7 @@ function BookingApp({ user, categories, onComplete }) {
               <div style={S.secTitle(mobile)}>Secure Payment</div>
               <div style={{ background: BG, borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 6 }}><span style={{ color: MUTED }}>Subtotal</span><span style={{ fontWeight: 700 }}>{fmt(subtotal)}</span></div>
+                {couponDisc > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 6, color: GREEN }}><span>Discount</span><span style={{ fontWeight: 700 }}>-{fmt(couponDisc)}</span></div>}
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 6 }}><span style={{ color: MUTED }}>GST</span><span style={{ fontWeight: 700 }}>{isNDIS ? "GST Free" : fmt(gst)}</span></div>
                 <hr style={{ border: "none", borderTop: `1px dashed ${BORDER}`, margin: "8px 0" }} />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ fontWeight: 800 }}>Total (AUD)</span><span style={{ fontWeight: 900, fontSize: 22, color: BLUE }}>{fmt(total)}</span></div>
@@ -723,7 +656,7 @@ function BookingApp({ user, categories, onComplete }) {
             </div>
           )}
 
-          {/* Navigation */}
+          {/* Nav buttons */}
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, paddingBottom: mobile ? 80 : 0 }}>
             {step > 1 ? <button style={S.btn(WHITE, BLUE, BLUE)} onClick={() => { setStep(s => s - 1); window.scrollTo(0, 0); }}>← Back</button> : <span />}
             {step < 6
@@ -737,8 +670,6 @@ function BookingApp({ user, categories, onComplete }) {
           <QuoteSidebar
             items={quoteItems}
             addons={quoteAddons}
-            freqId={freqId}
-            period={period}
             couponPct={couponPct}
             isNDIS={isNDIS}
             onApplyCoupon={(pct, id) => { setCouponPct(pct); setCouponId(id); }}
@@ -764,11 +695,18 @@ function ClientDash({ user, bookings, onLogout, onBook }) {
         <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "3px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 22, color: WHITE }}>{user.name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}</div>
-            <div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontWeight: 700, textTransform: "uppercase" }}>Welcome back</div><div style={{ fontSize: mobile ? 20 : 26, fontWeight: 900, color: WHITE }}>{user.name}</div></div>
+            <div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontWeight: 700, textTransform: "uppercase" }}>Welcome back</div>
+              <div style={{ fontSize: mobile ? 20 : 26, fontWeight: 900, color: WHITE }}>{user.name}</div>
+            </div>
           </div>
-          <button onClick={onBook} style={{ background: GREEN, color: WHITE, border: "none", borderRadius: 10, padding: "12px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>+ New Booking</button>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={onBook} style={{ background: GREEN, color: WHITE, border: "none", borderRadius: 10, padding: "12px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>+ New Booking</button>
+            {!mobile && <button onClick={onLogout} style={{ background: "rgba(255,255,255,0.15)", color: WHITE, border: "1px solid rgba(255,255,255,0.3)", borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Logout</button>}
+          </div>
         </div>
       </div>
+
       <div style={{ maxWidth: 900, margin: mobile ? "-40px 16px 0" : "-44px auto 0", position: "relative", zIndex: 2 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: mobile ? 10 : 16 }}>
           {[{ icon: "📋", label: "Total", value: mine.length, color: BLUE }, { icon: "✅", label: "Completed", value: past.filter(b => b.status === "Completed").length, color: GREEN }, { icon: "💰", label: "Spent", value: fmt(totalSpent), color: "#9b59b6" }].map(({ icon, label, value, color }) => (
@@ -780,6 +718,7 @@ function ClientDash({ user, bookings, onLogout, onBook }) {
           ))}
         </div>
       </div>
+
       <div style={{ maxWidth: 900, margin: "0 auto", padding: mobile ? "16px" : "24px 0 0" }}>
         <div style={{ display: "flex", gap: 4, marginBottom: 16, background: WHITE, borderRadius: 12, padding: 6, border: `1px solid ${BORDER}` }}>
           {[["upcoming",`Upcoming (${upcoming.length})`],["past",`History (${past.length})`]].map(([id, label]) => (
@@ -815,50 +754,41 @@ function BookingCard({ b, mobile }) {
 }
 
 // ── ADMIN DASHBOARD ──
-function AdminDash({ bookings, setBookings, clients, setClients, categories, setCategories, onLogout }) { // eslint-disable-line no-unused-vars
+function AdminDash({ bookings, setBookings, clients, setClients, categories, setCategories, onLogout }) {
   const mobile = useIsMobile();
-  const adminUser = (() => { try { const a = sessionStorage.getItem("adminUser"); return a ? JSON.parse(a) : null; } catch (e) { return null; } })();
+  const adminUser = (() => { try { return JSON.parse(sessionStorage.getItem("adminUser")); } catch { return null; } })();
   const isSuperAdmin = adminUser?.role === "superadmin";
-
   const [tab, setTab] = useState("bookings");
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [confirm, setConfirm] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Admin management (Super Admin only)
+  // Super Admin
   const [admins, setAdmins] = useState(() => { try { return JSON.parse(sessionStorage.getItem("adminList") || "[]"); } catch { return []; } });
   const [inviteModal, setInviteModal] = useState(false);
   const [inviteForm, setInviteForm] = useState({ name: "", email: "", password: "" });
   const [resetModal, setResetModal] = useState(null);
   const [resetForm, setResetForm] = useState({ newPw: "", confirm: "" });
 
-  // Category & items
+  // Categories/Items/Addons
   const [catModal, setCatModal] = useState(null);
   const [selCat, setSelCat] = useState(null);
-  const [catItems, setCatItems] = useState([]);
-  const [catAddons, setCatAddons] = useState([]);
+  const [adminItems, setAdminItems] = useState([]);
+  const [adminAddons, setAdminAddons] = useState([]);
   const [itemModal, setItemModal] = useState(null);
   const [addonModal, setAddonModal] = useState(null);
   const [itemsLoading, setItemsLoading] = useState(false);
-  // keep linter happy — these are used inside useEffect and save functions
-  void setCatItems; void setCatAddons;
 
-  // Frequency & coupons
+  // Frequency & Coupons
   const [freqs, setFreqs] = useState([]);
   const [freqModal, setFreqModal] = useState(null);
   const [coupons, setCoupons] = useState([]);
   const [couponModal, setCouponModal] = useState(null);
 
-  const SC = { Pending: "#e67e22", Confirmed: BLUE, Completed: GREEN, Cancelled: "#e74c3c" };
-
-  // All admins merged (hardcoded + session)
   const allAdmins = (() => {
     const merged = [...HARDCODED_ADMINS];
-    admins.forEach(a => {
-      if (!merged.find(m => m.id === a.id)) merged.push(a);
-      else { const i = merged.findIndex(m => m.id === a.id); merged[i] = a; }
-    });
+    admins.forEach(a => { if (!merged.find(m => m.id === a.id)) merged.push(a); else { const i = merged.findIndex(m => m.id === a.id); merged[i] = a; } });
     return merged;
   })();
 
@@ -884,7 +814,7 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
     Promise.all([
       supabase.from("items").select("*").eq("category_id", selCat.id).order("sort_order"),
       supabase.from("addon_items").select("*").eq("category_id", selCat.id).order("sort_order"),
-    ]).then(([ir, ar]) => { setCatItems(ir.data || []); setCatAddons(ar.data || []); setItemsLoading(false); });
+    ]).then(([ir, ar]) => { setAdminItems(ir.data || []); setAdminAddons(ar.data || []); setItemsLoading(false); });
   }, [selCat]);
 
   const filtBks = bookings.filter(b => {
@@ -893,8 +823,8 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
     return ms && mq;
   });
   const revenue = bookings.filter(b => b.status === "Completed").reduce((s, b) => s + b.total, 0);
+  const SC = { Pending: "#e67e22", Confirmed: BLUE, Completed: GREEN, Cancelled: "#e74c3c" };
 
-  // ── Booking ──
   async function updBk(id, status) {
     const dbId = bookings.find(b => b.id === id)?.db_id;
     if (dbId) await supabase.from("bookings").update({ status: status.toLowerCase() }).eq("id", dbId);
@@ -914,8 +844,6 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
       setClients(p => p.filter(c => c.id !== id)); setBookings(p => p.filter(b => b.clientId !== id)); setConfirm(null);
     }});
   }
-
-  // ── Categories ──
   async function saveCat(d) {
     if (d.id) { await supabase.from("service_categories").update({ name: d.name, icon: d.icon, description: d.description }).eq("id", d.id); setCategories(p => p.map(c => c.id === d.id ? { ...c, ...d } : c)); }
     else { const { data } = await supabase.from("service_categories").insert({ name: d.name, icon: d.icon || "🧹", description: d.description, is_active: true }).select().single(); if (data) setCategories(p => [...p, data]); }
@@ -927,35 +855,29 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
       setCategories(p => p.filter(c => c.id !== id)); if (selCat?.id === id) setSelCat(null); setConfirm(null);
     }});
   }
-
-  // ── Items ──
   async function saveItem(d) {
     const payload = { name: d.name, unit_type: d.unit_type, unit_price: Number(d.unit_price), default_quantity: Number(d.default_quantity) || 1, description: d.description || "", is_active: d.is_active !== false };
-    if (d.id) { await supabase.from("items").update(payload).eq("id", d.id); setCatItems(p => p.map(i => i.id === d.id ? { ...i, ...payload } : i)); }
-    else { const { data } = await supabase.from("items").insert({ category_id: selCat.id, ...payload }).select().single(); if (data) setCatItems(p => [...p, data]); }
+    if (d.id) { await supabase.from("items").update(payload).eq("id", d.id); setAdminItems(p => p.map(i => i.id === d.id ? { ...i, ...payload } : i)); }
+    else { const { data } = await supabase.from("items").insert({ category_id: selCat.id, ...payload }).select().single(); if (data) setAdminItems(p => [...p, data]); }
     setItemModal(null);
   }
   async function delItem(id) {
-    setConfirm({ msg: "Delete this item?", action: async () => { await supabase.from("items").delete().eq("id", id); setCatItems(p => p.filter(i => i.id !== id)); setConfirm(null); }});
+    setConfirm({ msg: "Delete this item?", action: async () => { await supabase.from("items").delete().eq("id", id); setAdminItems(p => p.filter(i => i.id !== id)); setConfirm(null); }});
   }
   async function saveAddon(d) {
     const payload = { name: d.name, unit_type: d.unit_type, unit_price: Number(d.unit_price), default_quantity: Number(d.default_quantity) || 1, description: d.description || "", is_active: d.is_active !== false };
-    if (d.id) { await supabase.from("addon_items").update(payload).eq("id", d.id); setCatAddons(p => p.map(a => a.id === d.id ? { ...a, ...payload } : a)); }
-    else { const { data } = await supabase.from("addon_items").insert({ category_id: selCat.id, ...payload }).select().single(); if (data) setCatAddons(p => [...p, data]); }
+    if (d.id) { await supabase.from("addon_items").update(payload).eq("id", d.id); setAdminAddons(p => p.map(a => a.id === d.id ? { ...a, ...payload } : a)); }
+    else { const { data } = await supabase.from("addon_items").insert({ category_id: selCat.id, ...payload }).select().single(); if (data) setAdminAddons(p => [...p, data]); }
     setAddonModal(null);
   }
   async function delAddon(id) {
-    setConfirm({ msg: "Delete this add-on?", action: async () => { await supabase.from("addon_items").delete().eq("id", id); setCatAddons(p => p.filter(a => a.id !== id)); setConfirm(null); }});
+    setConfirm({ msg: "Delete this add-on?", action: async () => { await supabase.from("addon_items").delete().eq("id", id); setAdminAddons(p => p.filter(a => a.id !== id)); setConfirm(null); }});
   }
-
-  // ── Frequency ──
   async function saveFreq(d) {
     await supabase.from("frequency_discounts").update({ discount_percent: Number(d.discount_percent), label: d.label }).eq("id", d.id);
     setFreqs(p => p.map(f => f.id === d.id ? { ...f, ...d, discount_percent: Number(d.discount_percent) } : f));
     setFreqModal(null);
   }
-
-  // ── Coupons ──
   async function saveCoupon(d) {
     if (d.id) {
       await supabase.from("coupons").update({ code: d.code.toUpperCase(), discount_value: Number(d.discount_value), discount_type: d.discount_type }).eq("id", d.id);
@@ -976,7 +898,6 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
     setConfirm({ msg: "Delete this coupon?", action: async () => { await supabase.from("coupons").delete().eq("id", id); setCoupons(p => p.filter(c => c.id !== id)); setConfirm(null); }});
   }
 
-  // ── Admin Management (Super Admin) ──
   function inviteAdmin() {
     if (!inviteForm.name || !inviteForm.email || !inviteForm.password) { alert("All fields required"); return; }
     if (allAdmins.find(a => a.email.toLowerCase() === inviteForm.email.toLowerCase())) { alert("Email already exists"); return; }
@@ -984,9 +905,8 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
     const updated = [...admins, newAdmin];
     setAdmins(updated); sessionStorage.setItem("adminList", JSON.stringify(updated));
     setInviteForm({ name: "", email: "", password: "" }); setInviteModal(false);
-    alert(`✅ Admin "${newAdmin.name}" created!\n\nAdd to HARDCODED_ADMINS in App.js:\n{ id:"${newAdmin.id}", name:"${newAdmin.name}", email:"${newAdmin.email}", password:"${newAdmin.password}", role:"admin" }`);
+    alert(`✅ Admin "${newAdmin.name}" created!\n\nAdd to HARDCODED_ADMINS:\n{ id:"${newAdmin.id}", name:"${newAdmin.name}", email:"${newAdmin.email}", password:"${newAdmin.password}", role:"admin" }`);
   }
-
   function delAdmin(id) {
     if (id === "super") { alert("Cannot delete Super Admin!"); return; }
     setConfirm({ msg: "Delete this admin?", action: () => {
@@ -994,7 +914,6 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
       setAdmins(updated); sessionStorage.setItem("adminList", JSON.stringify(updated)); setConfirm(null);
     }});
   }
-
   function resetAdminPw() {
     if (!resetForm.newPw || resetForm.newPw !== resetForm.confirm) { alert("Passwords don't match"); return; }
     const updated = admins.map(a => a.id === resetModal.id ? { ...a, password: resetForm.newPw } : a);
@@ -1010,7 +929,7 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
       <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Category Name *</div><input value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Window Cleaning" style={S.inp} /></div>
       <div style={{ marginBottom: 14 }}>
         <div style={S.sLbl}>Icon</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {CAT_ICONS.map(ic => <div key={ic} onClick={() => setF(p => ({ ...p, icon: ic }))} style={{ width: 44, height: 44, borderRadius: 10, border: `2px solid ${f.icon === ic ? BLUE : BORDER}`, background: f.icon === ic ? LIGHT_BLUE : WHITE, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, cursor: "pointer" }}>{ic}</div>)}
         </div>
       </div>
@@ -1023,16 +942,16 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
     const [f, setF] = useState({ name: "", unit_type: "Per Visit", unit_price: 0, default_quantity: 1, description: "", ...data });
     return <>
       <div style={{ marginBottom: 14 }}><div style={S.sLbl}>{label} Name *</div><input value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Standard Clean" style={S.inp} /></div>
-      <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Description</div><textarea value={f.description || ""} onChange={e => setF(p => ({ ...p, description: e.target.value }))} placeholder="Enter a description for this item" rows={3} style={{ ...S.inp, resize: "vertical" }} /></div>
+      <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Description</div><textarea value={f.description || ""} onChange={e => setF(p => ({ ...p, description: e.target.value }))} rows={2} style={{ ...S.inp, resize: "vertical" }} /></div>
       <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Unit Type *</div><select value={f.unit_type} onChange={e => setF(p => ({ ...p, unit_type: e.target.value }))} style={S.inp}>{UNIT_TYPES.map(u => <option key={u}>{u}</option>)}</select></div>
-      <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Unit Price ($) *</div><input type="number" min={0} step={0.01} value={f.unit_price} onChange={e => setF(p => ({ ...p, unit_price: e.target.value }))} placeholder="0.00" style={S.inp} /></div>
+      <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Unit Price ($) *</div><input type="number" min={0} step={0.01} value={f.unit_price} onChange={e => setF(p => ({ ...p, unit_price: e.target.value }))} style={S.inp} /></div>
       <div style={{ marginBottom: 20 }}>
         <div style={S.sLbl}>Default Quantity *</div>
-        <input type="number" min={1} value={f.default_quantity} onChange={e => setF(p => ({ ...p, default_quantity: e.target.value }))} placeholder="1" style={S.inp} />
-        <div style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>This quantity will be pre-filled in the booking form.</div>
+        <input type="number" min={0} step={0.5} value={f.default_quantity} onChange={e => setF(p => ({ ...p, default_quantity: e.target.value }))} style={S.inp} />
+        <div style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>Pre-filled in booking form. Multiplied by visits automatically.</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <button style={{ ...S.btn(BG, MUTED, BORDER), padding: 14 }} onClick={() => { onSave({ ...f, is_active: false }); }}>Save as Inactive</button>
+        <button style={{ ...S.btn(BG, MUTED, BORDER), padding: 14 }} onClick={() => onSave({ ...f, is_active: false })}>Save Inactive</button>
         <button style={{ ...S.btn(BLUE, WHITE), padding: 14 }} onClick={() => onSave({ ...f, is_active: true })}>Save {label}</button>
       </div>
     </>;
@@ -1116,11 +1035,9 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
       {!mobile && <div style={{ width: 230, background: WHITE, borderRight: `1px solid ${BORDER}`, padding: "24px 0", flexShrink: 0 }}><NavContent /></div>}
 
       <div style={{ flex: 1, overflowY: "auto", background: BG }}>
-        <div style={{ background: WHITE, borderBottom: `1px solid ${BORDER}`, padding: mobile ? "14px 16px" : "18px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 100 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {mobile && <button onClick={() => setMenuOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22 }}>☰</button>}
-            <h2 style={{ fontSize: mobile ? 16 : 20, fontWeight: 900 }}>{TABS.find(t => t.id === tab)?.label}</h2>
-          </div>
+        <div style={{ background: WHITE, borderBottom: `1px solid ${BORDER}`, padding: mobile ? "14px 16px" : "18px 28px", display: "flex", alignItems: "center", gap: 12, position: "sticky", top: 0, zIndex: 100 }}>
+          {mobile && <button onClick={() => setMenuOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22 }}>☰</button>}
+          <h2 style={{ fontSize: mobile ? 16 : 20, fontWeight: 900 }}>{TABS.find(t => t.id === tab)?.label}</h2>
         </div>
 
         <div style={{ padding: mobile ? "12px 16px" : "24px 28px" }}>
@@ -1134,7 +1051,7 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
             ))}
           </div>
 
-          {/* MANAGE ADMINS (Super Admin only) */}
+          {/* ADMINS */}
           {tab === "admins" && isSuperAdmin && <>
             <div style={{ background: `linear-gradient(135deg,${BLUE},#2196f3)`, borderRadius: 14, padding: "20px 24px", marginBottom: 20, color: WHITE }}>
               <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.8, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>Super Admin Panel</div>
@@ -1142,7 +1059,7 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
               <div style={{ fontSize: 13, opacity: 0.75, marginTop: 4 }}>Hidden from all other admins.</div>
             </div>
             <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#7a5c00", marginBottom: 16 }}>
-              ⚠️ After creating an admin, copy their details to <strong>HARDCODED_ADMINS</strong> in App.js so they can log in from any device.
+              ⚠️ After creating an admin, add to <strong>HARDCODED_ADMINS</strong> in App.js for cross-device login.
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
               <button style={S.btn(GREEN, WHITE)} onClick={() => setInviteModal(true)}>+ Invite New Admin</button>
@@ -1262,10 +1179,13 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
               </div>
               {itemsLoading ? <Loader /> : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {catItems.length === 0 && <div style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: 32, color: MUTED, textAlign: "center" }}>No items yet.</div>}
-                  {catItems.map(item => (
+                  {adminItems.length === 0 && <div style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: 32, color: MUTED, textAlign: "center" }}>No items yet.</div>}
+                  {adminItems.map(item => (
                     <div key={item.id} style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 14 }}>{item.name}</div><div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>{item.unit_type}</div></div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: 14 }}>{item.name}</div>
+                        <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>{item.unit_type} · Default qty: {item.default_quantity}</div>
+                      </div>
                       <div style={{ fontWeight: 900, fontSize: 16, color: GREEN }}>{fmt(item.unit_price)}</div>
                       <div style={{ display: "flex", gap: 6 }}>
                         <button onClick={() => setItemModal({ data: item })} style={{ ...S.btn(LIGHT_BLUE, BLUE), padding: "7px 12px", fontSize: 12 }}>✏️</button>
@@ -1295,10 +1215,13 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
               </div>
               {itemsLoading ? <Loader /> : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {catAddons.length === 0 && <div style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: 32, color: MUTED, textAlign: "center" }}>No add-ons yet.</div>}
-                  {catAddons.map(a => (
+                  {adminAddons.length === 0 && <div style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: 32, color: MUTED, textAlign: "center" }}>No add-ons yet.</div>}
+                  {adminAddons.map(a => (
                     <div key={a.id} style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 14 }}>{a.name}</div><div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>{a.unit_type}</div></div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: 14 }}>{a.name}</div>
+                        <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>{a.unit_type} · Default qty: {a.default_quantity}</div>
+                      </div>
                       <div style={{ fontWeight: 900, fontSize: 16, color: GREEN }}>+{fmt(a.unit_price)}</div>
                       <div style={{ display: "flex", gap: 6 }}>
                         <button onClick={() => setAddonModal({ data: a })} style={{ ...S.btn(LIGHT_GREEN, GREEN), padding: "7px 12px", fontSize: 12 }}>✏️</button>
@@ -1429,15 +1352,15 @@ function AdminLogin({ onLogin, onBack }) {
 
 function PrivateRoute({ user, children }) { return user ? children : <Navigate to="/login" replace />; }
 function AdminRoute({ children }) {
-  const adminUser = (() => { try { const a = sessionStorage.getItem("adminUser"); return a ? JSON.parse(a) : null; } catch (e) { return null; } })();
+  const adminUser = (() => { try { return JSON.parse(sessionStorage.getItem("adminUser")); } catch { return null; } })();
   return adminUser ? children : <Navigate to="/admin-login" replace />;
 }
 
 // ── ROOT ──
 export default function App() {
   const mobile = useIsMobile();
-  const [user, setUser] = useState(() => { try { const u = sessionStorage.getItem("user"); return u ? JSON.parse(u) : null; } catch (e) { return null; } });
-  const [adminUser, setAdminUser] = useState(() => { try { const a = sessionStorage.getItem("adminUser"); return a ? JSON.parse(a) : null; } catch (e) { return null; } });
+  const [user, setUser] = useState(() => { try { return JSON.parse(sessionStorage.getItem("user")); } catch { return null; } });
+  const [adminUser, setAdminUser] = useState(() => { try { return JSON.parse(sessionStorage.getItem("adminUser")); } catch { return null; } });
   const isAdmin = !!adminUser;
 
   const [categories, setCategories] = useState([]);
