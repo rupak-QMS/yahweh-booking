@@ -218,20 +218,19 @@ function BookingApp({ user, categories, onComplete }) {
   const mobile = useIsMobile();
   const today = new Date();
 
-  // Steps
   const [step, setStep] = useState(1);
   const [maxStep, setMaxStep] = useState(1);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [confirmedBooking, setConfirmedBooking] = useState(null);
+  // ── NEW: track if a new guest account was just created ──
+  const [guestAccountCreated, setGuestAccountCreated] = useState(false);
 
-  // Category & items
   const [selCat, setSelCat] = useState(null);
   const [bkItems, setBkItems] = useState([]);
   const [bkAddons, setBkAddons] = useState([]);
 
-  // Quote
   const [freqId, setFreqId] = useState("");
   const [period, setPeriod] = useState(1);
   const [quoteItems, setQuoteItems] = useState([{ id: uid(), item_id: "", name: "", unit_type: "", unit_price: 0, qty: 1, defQty: 1 }]);
@@ -239,13 +238,11 @@ function BookingApp({ user, categories, onComplete }) {
   const [couponPct, setCouponPct] = useState(0);
   const [couponId, setCouponId] = useState(null);
 
-  // Calendar
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [date, setDate] = useState(null);
   const [time, setTime] = useState("9:00 AM");
 
-  // Client details
   const [client, setClient] = useState({
     firstName: user?.name?.split(" ")[0] || "",
     lastName: user?.name?.split(" ").slice(1).join(" ") || "",
@@ -264,7 +261,6 @@ function BookingApp({ user, categories, onComplete }) {
   const gst = isNDIS ? 0 : Math.round(afterDisc * 0.10 * 100) / 100;
   const total = afterDisc + gst;
 
-  // Load items when category selected
   useEffect(() => {
     if (!selCat) return;
     supabase.from("items").select("*").eq("category_id", selCat.id).eq("is_active", true).order("sort_order")
@@ -275,7 +271,6 @@ function BookingApp({ user, categories, onComplete }) {
     setQuoteAddons([]);
   }, [selCat]);
 
-  // Recalculate qty when visits change
   useEffect(() => {
     if (!visits) return;
     setQuoteItems(p => p.map(it => it.item_id && it.defQty ? { ...it, qty: it.defQty * visits } : it));
@@ -314,7 +309,6 @@ function BookingApp({ user, categories, onComplete }) {
   function removeAddon(idx) { setQuoteAddons(p => p.filter((_, i) => i !== idx)); }
   const setC = k => e => setClient(p => ({ ...p, [k]: e.target.value }));
 
-  // Calendar helpers
   const calFirstDay = new Date(viewYear, viewMonth, 1).getDay();
   const calDaysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const minMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -348,48 +342,111 @@ function BookingApp({ user, categories, onComplete }) {
     const ns = step + 1; setStep(ns); setMaxStep(m => Math.max(m, ns)); window.scrollTo(0, 0);
   }
 
+  // ─────────────────────────────────────────────────────────────
+  //  SUBMIT — creates guest Supabase auth account automatically
+  // ─────────────────────────────────────────────────────────────
   async function submit() {
     setSubmitting(true);
     try {
       const fullName = [client.firstName, client.lastName].join(" ");
       const address = [client.address, client.suburb, client.state, client.postcode].filter(Boolean).join(", ");
+      const email = client.email.trim().toLowerCase();
+
+      // ── STEP A: Auto-create Supabase auth account for guest ──
+      // We only do this if the user isn't already logged in.
+      let userId = user?.id || null;
+      let accountJustCreated = false;
+
+      if (!user) {
+        // Generate a secure random temp password — user will replace it via email link
+        const tempPassword = crypto.randomUUID() + "!Aa1";
+
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password: tempPassword,
+          options: {
+            data: { first_name: client.firstName, last_name: client.lastName, phone: client.phone },
+            // After clicking the email link, user lands on /set-password to set their real password
+            emailRedirectTo: `${window.location.origin}/set-password`,
+          },
+        });
+
+        if (signUpError) {
+          // "User already registered" — that's fine, they may have booked before. Continue without re-creating.
+          if (!signUpError.message?.toLowerCase().includes("already registered")) {
+            throw signUpError;
+          }
+        } else {
+          userId = signUpData?.user?.id || null;
+          // identities array is empty when email is already confirmed (existing user), so only flag as new if not
+          if (signUpData?.user?.identities?.length > 0) {
+            accountJustCreated = true;
+          }
+        }
+      }
+
+      // ── STEP B: Upsert client record ──
       const { data: clientData, error: cErr } = await supabase.from("clients")
-        .upsert({ full_name: fullName, email: client.email, phone: client.phone, address: client.address, city: client.suburb, state: client.state, zip: client.postcode, notes: client.notes }, { onConflict: "email" })
+        .upsert(
+          { full_name: fullName, email, phone: client.phone, address: client.address, city: client.suburb, state: client.state, zip: client.postcode, notes: client.notes },
+          { onConflict: "email" }
+        )
         .select().single();
       if (cErr) throw cErr;
 
+      // ── STEP C: Insert booking ──
       const firstItem = quoteItems.find(i => i.item_id);
       const { data: bkData, error: bErr } = await supabase.from("bookings").insert({
-        client_id: clientData.id, category_id: selCat?.id,
+        client_id: clientData.id,
+        user_id: userId,          // links auth account to booking
+        category_id: selCat?.id,
         item_id: firstItem?.item_id || null,
         addon_item_ids: quoteAddons.filter(a => a.addon_id).map(a => a.addon_id),
-        coupon_id: couponId, frequency: freqId,
+        coupon_id: couponId,
+        frequency: freqId,
         scheduled_date: date.toISOString().split("T")[0],
-        scheduled_time: time, quantity: visits, status: "pending",
+        scheduled_time: time,
+        quantity: visits,
+        status: "pending",
         subtotal, discount_amount: couponDisc, total_price: total, notes: client.notes,
       }).select().single();
       if (bErr) throw bErr;
 
       if (couponId) await supabase.rpc("increment_coupon_uses", { coupon_id: couponId });
 
+      // ── STEP D: Send booking confirmation email via Edge Function ──
       const bookingId = `YPC${bkData.id.slice(0, 6).toUpperCase()}`;
       const freq = FREQUENCIES.find(f => f.id === freqId);
-
       try {
         await fetch("https://nsvzbhnqmyqpsehueqhu.supabase.co/functions/v1/send-booking-email", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({ type: "both", booking: { bookingId, clientName: fullName, clientEmail: client.email, phone: client.phone, service: firstItem?.name || selCat?.name, date: date.toISOString().split("T")[0], time, address, freq: freq?.label || freqId, extras: quoteAddons.filter(a => a.name).map(a => a.name), notes: client.notes, subtotal, discountAmount: couponDisc, gst, total, isNDIS } }),
+          body: JSON.stringify({
+            type: "both",
+            booking: {
+              bookingId, clientName: fullName, clientEmail: email,
+              phone: client.phone, service: firstItem?.name || selCat?.name,
+              date: date.toISOString().split("T")[0], time, address,
+              freq: freq?.label || freqId,
+              extras: quoteAddons.filter(a => a.name).map(a => a.name),
+              notes: client.notes, subtotal, discountAmount: couponDisc, gst, total, isNDIS,
+            },
+          }),
         });
-      } catch (e) { console.warn("Email failed:", e); }
+      } catch (e) { console.warn("Booking email failed:", e); }
 
-      const nb = { id: bookingId, clientId: clientData.id, clientName: fullName, clientEmail: client.email, service: firstItem?.name || selCat?.name, date: date.toISOString().split("T")[0], time, address, total, status: "Confirmed", freq: freq?.label || freqId, extras: [] };
+      const nb = {
+        id: bookingId, clientId: clientData.id, clientName: fullName, clientEmail: email,
+        service: firstItem?.name || selCat?.name, date: date.toISOString().split("T")[0],
+        time, address, total, status: "Confirmed", freq: freq?.label || freqId, extras: [],
+      };
       onComplete(nb);
       setConfirmedBooking(nb);
+      setGuestAccountCreated(accountJustCreated);
       setDone(true);
     } catch (err) {
       console.error(err);
-      setError("Failed to save. Please try again.");
+      setError("Failed to save booking. Please try again.");
     } finally { setSubmitting(false); }
   }
 
@@ -402,10 +459,36 @@ function BookingApp({ user, categories, onComplete }) {
           <h2 style={{ fontSize: 26, fontWeight: 900, color: GREEN, marginBottom: 8 }}>Booking Confirmed!</h2>
           <p style={{ color: MUTED, fontSize: 14 }}>Confirmation sent to <strong style={{ color: BLUE }}>{client.email}</strong></p>
         </div>
+
         <div style={{ background: LIGHT_BLUE, borderRadius: 10, padding: "12px 16px", textAlign: "center", marginBottom: 20 }}>
           <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Booking ID</div>
           <div style={{ fontSize: 24, fontWeight: 900, color: BLUE }}>{confirmedBooking.id}</div>
         </div>
+
+        {/* ── NEW: Show "verify your email" notice only for new guest accounts ── */}
+        {guestAccountCreated && (
+          <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
+            <div style={{ fontWeight: 800, fontSize: 14, color: "#7a5c00", marginBottom: 6 }}>📧 One more step — Activate your account</div>
+            <p style={{ fontSize: 13, color: "#7a5c00", margin: "0 0 10px", lineHeight: 1.6 }}>
+              We've automatically created an account for you so you can track your bookings.<br />
+              <strong>Check your email ({client.email})</strong> and click the link to verify & set your password.
+            </p>
+            <button
+              onClick={async () => {
+                const { error } = await supabase.auth.resend({
+                  type: "signup",
+                  email: client.email,
+                  options: { emailRedirectTo: `${window.location.origin}/set-password` },
+                });
+                alert(error ? `Could not resend: ${error.message}` : "✅ Verification email resent! Check your inbox.");
+              }}
+              style={{ background: "none", border: "none", color: BLUE, fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0, textDecoration: "underline" }}
+            >
+              Didn't receive it? Resend email
+            </button>
+          </div>
+        )}
+
         {[
           { title: "Service", rows: [["Category", selCat?.name], ["Service", confirmedBooking.service], ["Frequency", FREQUENCIES.find(f => f.id === freqId)?.label || freqId], ["Period", `${period} month${period > 1 ? "s" : ""}`], ["Total Visits", `${visits} visits`]] },
           { title: "Schedule", rows: [["Start Date", date?.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })], ["Start Time", time]] },
@@ -417,23 +500,24 @@ function BookingApp({ user, categories, onComplete }) {
             {sec.rows.map(([k, v]) => <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 7, fontSize: 14 }}><span style={{ color: MUTED }}>{k}</span><span style={{ fontWeight: 600, textAlign: "right", maxWidth: "60%" }}>{v}</span></div>)}
           </div>
         ))}
+
         <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#7a5c00", marginBottom: 20 }}>
           ⏰ Our team will call <strong>{client.phone}</strong> within 2 hours to confirm your appointment.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <button style={{ ...S.btn(WHITE, BLUE, BLUE), padding: 14 }} onClick={() => { setDone(false); setStep(1); setMaxStep(1); setConfirmedBooking(null); }}>+ New Booking</button>
+          <button style={{ ...S.btn(WHITE, BLUE, BLUE), padding: 14 }} onClick={() => { setDone(false); setStep(1); setMaxStep(1); setConfirmedBooking(null); setGuestAccountCreated(false); }}>+ New Booking</button>
           {user
             ? <button style={{ ...S.btn(BLUE, WHITE), padding: 14 }} onClick={() => window.location.href = "/client"}>My Bookings</button>
-            : <button style={{ ...S.btn(GREEN, WHITE), padding: 14 }} onClick={() => window.location.href = "/book"}>Book Another</button>
+            : <button style={{ ...S.btn(GREEN, WHITE), padding: 14 }} onClick={() => window.location.href = "/login"}>Sign In / My Bookings</button>
           }
         </div>
       </div>
     </div>
   );
 
+  // ── BOOKING FORM STEPS (unchanged from original) ──
   return (
     <div style={{ paddingBottom: mobile ? 100 : 0 }}>
-      {/* Step bar */}
       <div style={{ background: WHITE, borderBottom: `1px solid ${BORDER}`, overflowX: "auto" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", padding: mobile ? "0 4px" : "0 28px" }}>
           {STEPS.map((label, i) => { const n = i + 1, active = step === n, done2 = step > n, can = n <= maxStep; return (
@@ -449,8 +533,6 @@ function BookingApp({ user, categories, onComplete }) {
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: mobile ? 14 : "24px 28px", display: mobile ? "block" : "grid", gridTemplateColumns: "1fr 300px", gap: 24, alignItems: "start" }}>
         <div>
-
-          {/* STEP 1: Category */}
           {step === 1 && (
             <div style={S.panel(mobile)}>
               <div style={S.secTitle(mobile)}>Select Service Category</div>
@@ -466,7 +548,6 @@ function BookingApp({ user, categories, onComplete }) {
             </div>
           )}
 
-          {/* STEP 2: Quote Builder */}
           {step === 2 && (
             <>
               <div style={S.panel(mobile)}>
@@ -495,7 +576,6 @@ function BookingApp({ user, categories, onComplete }) {
                 </div>
               </div>
 
-              {/* Items */}
               <div style={S.panel(mobile)}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <div style={S.secTitle(mobile)}>Items</div>
@@ -546,7 +626,6 @@ function BookingApp({ user, categories, onComplete }) {
                 </div>
               </div>
 
-              {/* Addons */}
               <div style={S.panel(mobile)}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <div style={S.secTitle(mobile)}>Add-on Items</div>
@@ -597,12 +676,9 @@ function BookingApp({ user, categories, onComplete }) {
             </>
           )}
 
-          {/* STEP 3: Schedule */}
           {step === 3 && (
             <div style={S.panel(mobile)}>
               <div style={S.secTitle(mobile)}>Choose Start Date & Time</div>
-
-              {/* Frequency & Period */}
               <div style={{ background: LIGHT_BLUE, borderRadius: 12, padding: "14px 18px", marginBottom: 20 }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>📅 Service Period & Frequency</div>
                 <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr 1fr", gap: 12 }}>
@@ -628,8 +704,6 @@ function BookingApp({ user, categories, onComplete }) {
                   </div>
                 </div>
               </div>
-
-              {/* Month navigation */}
               <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>📅 Starting Month & Date</div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, background: LIGHT_BLUE, borderRadius: 10, padding: "10px 16px" }}>
                 <button onClick={prevMonth} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: BLUE, fontWeight: 900, lineHeight: 1, padding: "0 8px" }}>‹</button>
@@ -638,8 +712,6 @@ function BookingApp({ user, categories, onComplete }) {
                 </div>
                 <button onClick={nextMonth} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: BLUE, fontWeight: 900, lineHeight: 1, padding: "0 8px" }}>›</button>
               </div>
-
-              {/* Month pills */}
               <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, marginBottom: 14 }}>
                 {Array.from({ length: 6 }, (_, i) => {
                   const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
@@ -651,13 +723,9 @@ function BookingApp({ user, categories, onComplete }) {
                   );
                 })}
               </div>
-
-              {/* Day headers */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: mobile ? 4 : 6, marginBottom: 4 }}>
                 {DAYS.map(d => <div key={d} style={{ textAlign: "center", fontSize: 10, color: MUTED, fontWeight: 800, padding: "3px 0" }}>{d}</div>)}
               </div>
-
-              {/* Calendar grid */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: mobile ? 4 : 6, marginBottom: 20 }}>
                 {Array.from({ length: calFirstDay }, (_, i) => <div key={`b${i}`} />)}
                 {Array.from({ length: calDaysInMonth }, (_, i) => {
@@ -672,14 +740,10 @@ function BookingApp({ user, categories, onComplete }) {
                   );
                 })}
               </div>
-
-              {/* Time */}
               <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>🕐 Start Time</div>
               <div style={{ display: "grid", gridTemplateColumns: mobile ? "repeat(3,1fr)" : "repeat(auto-fill,minmax(100px,1fr))", gap: mobile ? 8 : 10 }}>
                 {TIME_SLOTS.map(t => { const a = time === t; return <div key={t} onClick={() => setTime(t)} style={{ border: `2px solid ${a ? BLUE : BORDER}`, borderRadius: 10, padding: mobile ? "11px 6px" : 12, textAlign: "center", cursor: "pointer", background: a ? BLUE : WHITE, color: a ? WHITE : MUTED, fontWeight: a ? 800 : 500, fontSize: mobile ? 12 : 13 }}>{t}</div>; })}
               </div>
-
-              {/* Summary */}
               {date && (
                 <div style={{ marginTop: 16, background: LIGHT_GREEN, border: `1px solid ${GREEN}44`, borderRadius: 12, padding: "14px 18px" }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: GREEN, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>✅ Schedule Confirmed</div>
@@ -694,10 +758,15 @@ function BookingApp({ user, categories, onComplete }) {
             </div>
           )}
 
-          {/* STEP 4: Details */}
           {step === 4 && (
             <div style={S.panel(mobile)}>
               <div style={S.secTitle(mobile)}>Your Details</div>
+              {/* ── NEW: info hint for guests ── */}
+              {!user && (
+                <div style={{ background: LIGHT_BLUE, border: `1px solid ${BLUE}33`, borderRadius: 10, padding: "10px 14px", fontSize: 13, color: BLUE, marginBottom: 16 }}>
+                  💡 <strong>Your email will be used to create your account</strong> — you'll receive a link to set your password after booking.
+                </div>
+              )}
               <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: mobile ? 12 : 16 }}>
                 {[["First Name","firstName","text","Jane"],["Last Name","lastName","text","Smith"],["Email","email","email","jane@example.com"],["Phone","phone","tel","04XX XXX XXX"]].map(([l,k,t,ph]) => (
                   <div key={k}><div style={S.sLbl}>{l} *</div><input type={t} value={client[k]} onChange={setC(k)} placeholder={ph} style={S.inp} /></div>
@@ -716,7 +785,6 @@ function BookingApp({ user, categories, onComplete }) {
             </div>
           )}
 
-          {/* STEP 5: Payment */}
           {step === 5 && (
             <div style={S.panel(mobile)}>
               <div style={S.secTitle(mobile)}>Secure Payment</div>
@@ -737,7 +805,6 @@ function BookingApp({ user, categories, onComplete }) {
             </div>
           )}
 
-          {/* STEP 6: Confirm */}
           {step === 6 && (
             <div style={S.panel(mobile)}>
               <div style={S.secTitle(mobile)}>Review & Confirm</div>
@@ -752,11 +819,16 @@ function BookingApp({ user, categories, onComplete }) {
                   {sec.rows.map(([k, v]) => <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 7, fontSize: 14 }}><span style={{ color: MUTED }}>{k}</span><span style={{ fontWeight: 600, textAlign: "right", maxWidth: "60%" }}>{v}</span></div>)}
                 </div>
               ))}
+              {/* ── NEW: remind guest about account creation on final step ── */}
+              {!user && (
+                <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#7a5c00", marginBottom: 12 }}>
+                  📧 After confirming, we'll send a link to <strong>{client.email}</strong> to activate your account and set your password.
+                </div>
+              )}
               <div style={{ background: LIGHT_BLUE, borderRadius: 10, padding: "12px 14px", fontSize: 13, color: "#1a3d60" }}>✅ By confirming you agree to Yahweh Property Care's Terms of Service.</div>
             </div>
           )}
 
-          {/* Nav */}
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, paddingBottom: mobile ? 80 : 0 }}>
             {step > 1 ? <button style={S.btn(WHITE, BLUE, BLUE)} onClick={() => { setStep(s => s - 1); window.scrollTo(0, 0); }}>← Back</button> : <span />}
             {step < 6
@@ -844,7 +916,201 @@ function BookingCard({ b, mobile }) {
   );
 }
 
-// ── ADMIN DASHBOARD ──
+// ── SET PASSWORD PAGE (handles email verification link) ──
+function SetPasswordPage({ onDone }) {
+  const mobile = useIsMobile();
+  const [pass, setPass] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(true);   // start true while we exchange token
+  const [ready, setReady] = useState(false);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    // Exchange the PKCE code or hash token so a session is established
+    async function boot() {
+      // Handle hash-fragment flow (#access_token=... from older email templates)
+      const hash = window.location.hash;
+      if (hash.includes("access_token")) {
+        // Supabase v2 picks this up automatically via createClient
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) { setReady(true); setLoading(false); return; }
+      }
+      // Handle PKCE flow (?code=...)
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!error) { setReady(true); setLoading(false); return; }
+      }
+      // Fallback: check if session already exists (user navigated back)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) { setReady(true); } else { setErr("This link has expired or is invalid. Please request a new one."); }
+      setLoading(false);
+    }
+    boot();
+  }, []);
+
+  async function handleSet() {
+    if (pass.length < 6) { setErr("Password must be at least 6 characters."); return; }
+    if (pass !== confirm) { setErr("Passwords don't match."); return; }
+    setLoading(true); setErr("");
+    const { error } = await supabase.auth.updateUser({ password: pass });
+    if (error) { setErr(error.message); setLoading(false); return; }
+    setDone(true);
+    setTimeout(() => { if (onDone) onDone(); window.location.href = "/client"; }, 2000);
+  }
+
+  return (
+    <div style={{ maxWidth: 420, margin: mobile ? "0 auto" : "56px auto", padding: 16 }}>
+      <div style={{ background: WHITE, borderRadius: 18, border: `1px solid ${BORDER}`, padding: mobile ? "24px 20px" : 36, boxShadow: "0 8px 40px rgba(27,117,187,0.10)", marginTop: mobile ? 8 : 0, textAlign: "center" }}>
+        <img src="/logo.png" alt="Yahweh Property Care" style={{ height: 80, width: "auto", objectFit: "contain", mixBlendMode: "multiply", marginBottom: 16 }} />
+
+        {loading && <Loader text="Verifying your link…" />}
+
+        {!loading && done && (
+          <>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
+            <h2 style={{ fontWeight: 900, color: GREEN, marginBottom: 8 }}>Password Set!</h2>
+            <p style={{ color: MUTED, fontSize: 14 }}>Your account is active. Redirecting to your bookings…</p>
+          </>
+        )}
+
+        {!loading && !done && !ready && (
+          <>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>⛔</div>
+            <h2 style={{ fontWeight: 900, color: "#e74c3c", marginBottom: 8 }}>Link Expired</h2>
+            <p style={{ color: MUTED, fontSize: 14, marginBottom: 20 }}>{err}</p>
+            <button style={{ ...S.btn(BLUE, WHITE), width: "100%", padding: 14 }} onClick={() => window.location.href = "/login"}>← Back to Login</button>
+          </>
+        )}
+
+        {!loading && !done && ready && (
+          <>
+            <h2 style={{ fontWeight: 900, fontSize: 22, color: BLUE, marginBottom: 6 }}>Set Your Password</h2>
+            <p style={{ color: MUTED, fontSize: 14, marginBottom: 24 }}>Create a password to access your bookings anytime.</p>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ marginBottom: 14 }}><div style={S.sLbl}>New Password *</div><input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Min. 6 characters" style={S.inp} /></div>
+              <div style={{ marginBottom: 20 }}><div style={S.sLbl}>Confirm Password *</div><input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Re-enter password" style={S.inp} onKeyDown={e => e.key === "Enter" && handleSet()} /></div>
+            </div>
+            {err && <div style={{ background: "#fdecea", borderRadius: 9, padding: "10px 14px", color: "#c0392b", fontSize: 13, marginBottom: 14 }}>{err}</div>}
+            <button style={{ ...S.btn(BLUE, WHITE), width: "100%", padding: 14, fontSize: 15 }} onClick={handleSet} disabled={loading}>
+              {loading ? "Setting password…" : "Set Password & View Bookings"}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── LOGIN ──
+function LoginScreen({ onLogin, onAdmin, onGuest }) {
+  const mobile = useIsMobile();
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+
+  async function tryLogin() {
+    setLoading(true); setErr("");
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    if (error) { setErr(error.message); setLoading(false); return; }
+    if (data.user) {
+      const { data: clientData } = await supabase.from("clients").select("*").eq("email", data.user.email).single();
+      onLogin({ id: data.user.id, name: clientData?.full_name || data.user.email, email: data.user.email, phone: clientData?.phone || "" });
+    }
+    setLoading(false);
+  }
+
+  async function sendReset() {
+    setLoading(true); setErr("");
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/set-password` });
+    if (error) { setErr(error.message); } else { setForgotSent(true); }
+    setLoading(false);
+  }
+
+  return (
+    <div style={{ maxWidth: 420, margin: mobile ? "0 auto" : "56px auto", padding: 16 }}>
+      <div style={{ background: WHITE, borderRadius: 18, border: `1px solid ${BORDER}`, padding: mobile ? "24px 20px" : 36, boxShadow: "0 8px 40px rgba(27,117,187,0.10)", marginTop: mobile ? 8 : 0 }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <img src="/logo.png" alt="Yahweh Property Care" style={{ height: 100, width: "auto", objectFit: "contain", mixBlendMode: "multiply" }} />
+          <p style={{ color: MUTED, fontSize: 14, marginTop: 8 }}>{forgotMode ? "Reset your password" : "Sign in to manage your bookings"}</p>
+        </div>
+
+        {forgotSent ? (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>📧</div>
+            <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 8 }}>Check your email!</div>
+            <p style={{ color: MUTED, fontSize: 14, marginBottom: 20 }}>We sent a password reset link to <strong>{email}</strong></p>
+            <button style={{ ...S.btn(WHITE, BLUE, BLUE), width: "100%", padding: 14 }} onClick={() => { setForgotMode(false); setForgotSent(false); }}>← Back to Login</button>
+          </div>
+        ) : forgotMode ? (
+          <>
+            <div style={{ marginBottom: 16 }}><div style={S.sLbl}>Email</div><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" style={S.inp} /></div>
+            {err && <div style={{ background: "#fdecea", borderRadius: 9, padding: "10px 14px", color: "#c0392b", fontSize: 13, marginBottom: 14 }}>{err}</div>}
+            <button style={{ ...S.btn(BLUE, WHITE), width: "100%", marginBottom: 12, padding: 14 }} onClick={sendReset} disabled={loading}>{loading ? "Sending…" : "Send Reset Link"}</button>
+            <button style={{ ...S.btn(WHITE, BLUE, BLUE), width: "100%", padding: 14 }} onClick={() => setForgotMode(false)}>← Back to Login</button>
+          </>
+        ) : (
+          <>
+            {[["Email","email","email","you@example.com",setEmail,email],["Password","pass","password","••••••••",setPass,pass]].map(([l,id,t,p,fn,v]) => (
+              <div key={id} style={{ marginBottom: 16 }}><div style={S.sLbl}>{l}</div><input type={t} value={v} onChange={e => fn(e.target.value)} placeholder={p} style={S.inp} onKeyDown={e => e.key === "Enter" && tryLogin()} /></div>
+            ))}
+            <div style={{ textAlign: "right", marginTop: -8, marginBottom: 16 }}>
+              <span onClick={() => setForgotMode(true)} style={{ fontSize: 13, color: BLUE, cursor: "pointer", fontWeight: 600 }}>Forgot password?</span>
+            </div>
+            {err && <div style={{ background: "#fdecea", border: "1px solid #f5c6cb", borderRadius: 9, padding: "10px 14px", color: "#c0392b", fontSize: 13, marginBottom: 14 }}>{err}</div>}
+            <button style={{ ...S.btn(BLUE, WHITE), width: "100%", marginBottom: 12, fontSize: 15, padding: 14 }} onClick={tryLogin} disabled={loading}>{loading ? "Signing in…" : "Sign In"}</button>
+            <button style={{ ...S.btn(WHITE, BLUE, BLUE), width: "100%", marginBottom: 16, padding: 14 }} onClick={onGuest}>Continue as Guest</button>
+            <hr style={{ border: "none", borderTop: `1px solid ${BORDER}`, margin: "16px 0" }} />
+            <button onClick={onAdmin} style={{ width: "100%", background: BG, color: MUTED, border: `1px solid ${BORDER}`, borderRadius: 9, padding: 12, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>🔐 Admin Login</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── ADMIN LOGIN ──
+function AdminLogin({ onLogin, onBack }) {
+  const mobile = useIsMobile();
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [err, setErr] = useState("");
+  function tryLogin() {
+    if (email.trim().toLowerCase() === SUPER_ADMIN.email.toLowerCase() && pass === SUPER_ADMIN.password) {
+      const d = { id: "super", name: "Ron_admin", email: SUPER_ADMIN.email, role: "superadmin", password: SUPER_ADMIN.password };
+      sessionStorage.setItem("adminUser", JSON.stringify(d)); onLogin(d); return;
+    }
+    try {
+      const stored = JSON.parse(sessionStorage.getItem("adminList") || "[]");
+      const merged = [...HARDCODED_ADMINS];
+      stored.forEach(sa => { if (!merged.find(a => a.id === sa.id)) merged.push(sa); else { const i = merged.findIndex(a => a.id === sa.id); merged[i] = sa; } });
+      const found = merged.find(a => a.email.toLowerCase() === email.trim().toLowerCase() && a.password === pass);
+      if (found) { sessionStorage.setItem("adminUser", JSON.stringify(found)); onLogin(found); return; }
+    } catch (e) {}
+    setErr("Invalid email or password.");
+  }
+  return (
+    <div style={{ maxWidth: 380, margin: mobile ? "0 auto" : "56px auto", padding: 16 }}>
+      <div style={{ background: WHITE, borderRadius: 18, border: `1px solid ${BORDER}`, padding: mobile ? "24px 20px" : 36, textAlign: "center", boxShadow: "0 8px 40px rgba(27,117,187,0.10)", marginTop: mobile ? 8 : 0 }}>
+        <div style={{ width: 72, height: 72, background: LIGHT_BLUE, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 32 }}>🔐</div>
+        <h2 style={{ fontWeight: 900, fontSize: 20, color: BLUE, marginBottom: 6 }}>Admin Login</h2>
+        <p style={{ color: MUTED, fontSize: 13, marginBottom: 20 }}>Yahweh Property Care</p>
+        <div style={{ textAlign: "left", marginBottom: 14 }}><div style={S.sLbl}>Email</div><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@example.com" style={S.inp} onKeyDown={e => e.key === "Enter" && tryLogin()} /></div>
+        <div style={{ textAlign: "left", marginBottom: 14 }}><div style={S.sLbl}>Password</div><input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="••••••••" style={S.inp} onKeyDown={e => e.key === "Enter" && tryLogin()} /></div>
+        {err && <div style={{ color: "#e74c3c", fontSize: 13, marginBottom: 12, background: "#fdecea", borderRadius: 8, padding: "8px 12px" }}>{err}</div>}
+        <button style={{ ...S.btn(BLUE, WHITE), width: "100%", marginBottom: 10, padding: 14 }} onClick={tryLogin}>Login</button>
+        <button style={{ ...S.btn(WHITE, BLUE, BLUE), width: "100%", padding: 14 }} onClick={onBack}>← Back</button>
+      </div>
+    </div>
+  );
+}
+
+// ── ADMIN DASHBOARD (unchanged — keeping your full original) ──
 function AdminDash({ bookings, setBookings, clients, setClients, categories, setCategories, onLogout }) {
   const mobile = useIsMobile();
   const adminUser = (() => { try { return JSON.parse(sessionStorage.getItem("adminUser")); } catch { return null; } })();
@@ -1358,71 +1624,7 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
   );
 }
 
-// ── AUTH ──
-function LoginScreen({ clients, onLogin, onAdmin, onGuest }) {
-  const mobile = useIsMobile();
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
-  const [err, setErr] = useState("");
-  function tryLogin() {
-    const u = clients.find(c => c.email === email && c.password === pass);
-    if (u) onLogin(u); else setErr("Invalid credentials.");
-  }
-  return (
-    <div style={{ maxWidth: 420, margin: mobile ? "0 auto" : "56px auto", padding: 16 }}>
-      <div style={{ background: WHITE, borderRadius: 18, border: `1px solid ${BORDER}`, padding: mobile ? "24px 20px" : 36, boxShadow: "0 8px 40px rgba(27,117,187,0.10)", marginTop: mobile ? 8 : 0 }}>
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <img src="/logo.png" alt="Yahweh Property Care" style={{ height: 100, width: "auto", objectFit: "contain", mixBlendMode: "multiply" }} />
-          <p style={{ color: MUTED, fontSize: 14, marginTop: 8 }}>Sign in to manage your bookings</p>
-        </div>
-        {[["Email","email","email","you@example.com",setEmail,email],["Password","pass","password","••••••••",setPass,pass]].map(([l,id,t,p,fn,v]) => (
-          <div key={id} style={{ marginBottom: 16 }}><div style={S.sLbl}>{l}</div><input type={t} value={v} onChange={e => fn(e.target.value)} placeholder={p} style={S.inp} onKeyDown={e => e.key === "Enter" && tryLogin()} /></div>
-        ))}
-        {err && <div style={{ background: "#fdecea", border: "1px solid #f5c6cb", borderRadius: 9, padding: "10px 14px", color: "#c0392b", fontSize: 13, marginBottom: 14 }}>{err}</div>}
-        <button style={{ ...S.btn(BLUE, WHITE), width: "100%", marginBottom: 12, fontSize: 15, padding: 14 }} onClick={tryLogin}>Sign In</button>
-        <button style={{ ...S.btn(WHITE, BLUE, BLUE), width: "100%", marginBottom: 16, padding: 14 }} onClick={onGuest}>Continue as Guest</button>
-        <hr style={{ border: "none", borderTop: `1px solid ${BORDER}`, margin: "16px 0" }} />
-        <button onClick={onAdmin} style={{ width: "100%", background: BG, color: MUTED, border: `1px solid ${BORDER}`, borderRadius: 9, padding: 12, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>🔐 Admin Login</button>
-      </div>
-    </div>
-  );
-}
-
-function AdminLogin({ onLogin, onBack }) {
-  const mobile = useIsMobile();
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
-  const [err, setErr] = useState("");
-  function tryLogin() {
-    if (email.trim().toLowerCase() === SUPER_ADMIN.email.toLowerCase() && pass === SUPER_ADMIN.password) {
-      const d = { id: "super", name: "Ron_admin", email: SUPER_ADMIN.email, role: "superadmin", password: SUPER_ADMIN.password };
-      sessionStorage.setItem("adminUser", JSON.stringify(d)); onLogin(d); return;
-    }
-    try {
-      const stored = JSON.parse(sessionStorage.getItem("adminList") || "[]");
-      const merged = [...HARDCODED_ADMINS];
-      stored.forEach(sa => { if (!merged.find(a => a.id === sa.id)) merged.push(sa); else { const i = merged.findIndex(a => a.id === sa.id); merged[i] = sa; } });
-      const found = merged.find(a => a.email.toLowerCase() === email.trim().toLowerCase() && a.password === pass);
-      if (found) { sessionStorage.setItem("adminUser", JSON.stringify(found)); onLogin(found); return; }
-    } catch (e) {}
-    setErr("Invalid email or password.");
-  }
-  return (
-    <div style={{ maxWidth: 380, margin: mobile ? "0 auto" : "56px auto", padding: 16 }}>
-      <div style={{ background: WHITE, borderRadius: 18, border: `1px solid ${BORDER}`, padding: mobile ? "24px 20px" : 36, textAlign: "center", boxShadow: "0 8px 40px rgba(27,117,187,0.10)", marginTop: mobile ? 8 : 0 }}>
-        <div style={{ width: 72, height: 72, background: LIGHT_BLUE, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 32 }}>🔐</div>
-        <h2 style={{ fontWeight: 900, fontSize: 20, color: BLUE, marginBottom: 6 }}>Admin Login</h2>
-        <p style={{ color: MUTED, fontSize: 13, marginBottom: 20 }}>Yahweh Property Care</p>
-        <div style={{ textAlign: "left", marginBottom: 14 }}><div style={S.sLbl}>Email</div><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@example.com" style={S.inp} onKeyDown={e => e.key === "Enter" && tryLogin()} /></div>
-        <div style={{ textAlign: "left", marginBottom: 14 }}><div style={S.sLbl}>Password</div><input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="••••••••" style={S.inp} onKeyDown={e => e.key === "Enter" && tryLogin()} /></div>
-        {err && <div style={{ color: "#e74c3c", fontSize: 13, marginBottom: 12, background: "#fdecea", borderRadius: 8, padding: "8px 12px" }}>{err}</div>}
-        <button style={{ ...S.btn(BLUE, WHITE), width: "100%", marginBottom: 10, padding: 14 }} onClick={tryLogin}>Login</button>
-        <button style={{ ...S.btn(WHITE, BLUE, BLUE), width: "100%", padding: 14 }} onClick={onBack}>← Back</button>
-      </div>
-    </div>
-  );
-}
-
+// ── ROUTE GUARDS ──
 function PrivateRoute({ user, children }) { return user ? children : <Navigate to="/login" replace />; }
 function AdminRoute({ children }) {
   const adminUser = (() => { try { return JSON.parse(sessionStorage.getItem("adminUser")); } catch { return null; } })();
@@ -1439,6 +1641,23 @@ export default function App() {
   const [bookings, setBookings] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ── Supabase auth listener — keeps user session in sync ──
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.user && !user) {
+        const { data: clientData } = await supabase.from("clients").select("*").eq("email", session.user.email).single();
+        const u = { id: session.user.id, name: clientData?.full_name || session.user.email, email: session.user.email, phone: clientData?.phone || "" };
+        setUser(u);
+        sessionStorage.setItem("user", JSON.stringify(u));
+      }
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        sessionStorage.removeItem("user");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []); // eslint-disable-line
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -1478,7 +1697,7 @@ export default function App() {
               {user && !isAdmin && <button onClick={() => window.location.href = "/client"} style={{ background: "none", border: "none", color: MUTED, fontSize: 13, cursor: "pointer", fontWeight: 600 }}>👤 My Bookings</button>}
               {!isAdmin && <button style={S.btn(GREEN, WHITE)} onClick={() => window.location.href = "/book"}>+ Book a Clean</button>}
               {!user && !isAdmin && <button style={S.btn(WHITE, BLUE, BLUE)} onClick={() => window.location.href = "/login"}>Login</button>}
-              {user && !isAdmin && <button style={S.btn(WHITE, BLUE, BLUE)} onClick={() => { setUser(null); sessionStorage.removeItem("user"); window.location.href = "/login"; }}>Logout</button>}
+              {user && !isAdmin && <button style={S.btn(WHITE, BLUE, BLUE)} onClick={() => { setUser(null); sessionStorage.removeItem("user"); supabase.auth.signOut(); window.location.href = "/login"; }}>Logout</button>}
               {isAdmin && <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ background: adminUser?.role === "superadmin" ? `linear-gradient(135deg,${BLUE},#2196f3)` : LIGHT_BLUE, borderRadius: 8, padding: "6px 14px" }}>
                   <span style={{ fontSize: 12, color: adminUser?.role === "superadmin" ? WHITE : BLUE, fontWeight: 800 }}>{adminUser?.role === "superadmin" ? "⭐ Super Admin" : "👤 Admin"}: {adminUser?.name}</span>
@@ -1491,11 +1710,13 @@ export default function App() {
         </header>
 
         <Routes>
-          <Route path="/login" element={<LoginScreen clients={clients} onLogin={u => { setUser(u); sessionStorage.setItem("user", JSON.stringify(u)); window.location.href = "/client"; }} onAdmin={() => window.location.href = "/admin-login"} onGuest={() => window.location.href = "/book"} />} />
+          <Route path="/login" element={<LoginScreen onLogin={u => { setUser(u); sessionStorage.setItem("user", JSON.stringify(u)); window.location.href = "/client"; }} onAdmin={() => window.location.href = "/admin-login"} onGuest={() => window.location.href = "/book"} />} />
           <Route path="/admin-login" element={<AdminLogin onLogin={u => { setAdminUser(u); window.location.href = "/admin"; }} onBack={() => window.location.href = "/login"} />} />
           <Route path="/book" element={<BookingApp user={user} categories={categories} onComplete={nb => setBookings(p => [...p, nb])} />} />
-          <Route path="/client" element={<PrivateRoute user={user}><ClientDash user={user} bookings={bookings} onLogout={() => { setUser(null); sessionStorage.removeItem("user"); window.location.href = "/login"; }} onBook={() => window.location.href = "/book"} /></PrivateRoute>} />
+          <Route path="/client" element={<PrivateRoute user={user}><ClientDash user={user} bookings={bookings} onLogout={() => { setUser(null); sessionStorage.removeItem("user"); supabase.auth.signOut(); window.location.href = "/login"; }} onBook={() => window.location.href = "/book"} /></PrivateRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminDash bookings={bookings} setBookings={setBookings} clients={clients} setClients={setClients} categories={categories} setCategories={setCategories} onLogout={() => { setAdminUser(null); sessionStorage.removeItem("adminUser"); window.location.href = "/login"; }} /></AdminRoute>} />
+          {/* ── NEW: set-password route for email verification link ── */}
+          <Route path="/set-password" element={<SetPasswordPage onDone={() => {}} />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
