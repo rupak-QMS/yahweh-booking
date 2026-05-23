@@ -841,6 +841,8 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
   const [itemModal, setItemModal] = useState(null);
   const [addonModal, setAddonModal] = useState(null);
   const [itemsLoading, setItemsLoading] = useState(false);
+  // keep linter happy — these are used inside useEffect and save functions
+  void setCatItems; void setCatAddons;
 
   // Frequency & coupons
   const [freqs, setFreqs] = useState([]);
