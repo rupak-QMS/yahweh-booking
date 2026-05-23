@@ -1,15 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { supabase } from "./supabase";
 
-const BLUE = "#1b75bb";
-const GREEN = "#7eb842";
-const LIGHT_BLUE = "#e8f3fb";
-const LIGHT_GREEN = "#f0f9e8";
-const BORDER = "#e0e7ef";
-const MUTED = "#7a90a8";
-const TEXT = "#1a2533";
-const BG = "#f5f7fa";
-const WHITE = "#ffffff";
+// ── THEME ──
+const BLUE = "#1b75bb", GREEN = "#7eb842", LIGHT_BLUE = "#e8f3fb", LIGHT_GREEN = "#f0f9e8";
+const BORDER = "#e0e7ef", MUTED = "#7a90a8", TEXT = "#1a2533", BG = "#f5f7fa", WHITE = "#ffffff";
 
 function useIsMobile() {
   const [m, setM] = useState(window.innerWidth < 768);
@@ -17,8 +12,7 @@ function useIsMobile() {
   return m;
 }
 
-function checkSuperAdmin(u) { return !!(u && u.role === "superadmin" && u.id === "super"); }
-function uid() { return Math.random().toString(36).slice(2, 8); }
+function checkSuperAdmin(u) { return !!(u && u.role === "superadmin"); }
 const fmt = n => `A$${Number(n).toFixed(2)}`;
 
 const S = {
@@ -36,81 +30,30 @@ const STATUS_CONFIG = {
   Cancelled: { color: "#e74c3c", bg: "#fdecea" },
 };
 
-// ── SUPER ADMIN ──
+const TIME_SLOTS = ["7:00 AM","8:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","2:00 PM","3:00 PM"];
+const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+// ── SUPER ADMIN (hardcoded for security) ──
 const SUPER_ADMIN = { id: "super", name: "Ron_admin", email: "ron.web108@gmail.com", password: "Ron@!two3@#", role: "superadmin" };
-
-// ── HARDCODED ADMINS — Add new admins here so they work on ALL devices ──
 const HARDCODED_ADMINS = [
-  { id:"a001", name:"Alex Yogarajah", email:"alex@yahwehpc.com.au", password:"Yahweh219@#", role:"admin" },
+  { id: "a001", name: "Alex Yogarajah", email: "alex@yahwehpc.com.au", password: "Yahweh219@#", role: "admin" },
 ];
-
-// ── DEFAULT DATA ──
-const DEF_SERVICES = [
-  { id: "house", name: "House Cleaning", icon: "🏠", base: 119, hasRooms: true },
-  { id: "commercial", name: "Commercial", icon: "🏢", base: 149, hasRooms: false },
-  { id: "lease", name: "End of Lease", icon: "🔑", base: 199, hasRooms: true },
-  { id: "ndis", name: "NDIS Cleaning", icon: "💙", base: 99, hasRooms: true },
-  { id: "office", name: "Office Cleaning", icon: "💼", base: 139, hasRooms: false },
-  { id: "carpet", name: "Carpet Cleaning", icon: "🧹", base: 89, hasRooms: false },
-  { id: "strata", name: "Strata Cleaning", icon: "🏘️", base: 129, hasRooms: false },
-  { id: "deep", name: "Deep Clean", icon: "✨", base: 179, hasRooms: true },
-];
-
-const DEF_EXTRAS = [
-  { id: "oven", name: "Oven Cleaning", icon: "🔥", price: 65 },
-  { id: "fridge", name: "Fridge Cleaning", icon: "❄️", price: 50 },
-  { id: "windows", name: "Interior Windows", icon: "🪟", price: 79 },
-  { id: "cabinets", name: "Inside Cabinets", icon: "🗄️", price: 40 },
-  { id: "deepclean", name: "Deep Clean", icon: "✨", price: 159 },
-  { id: "balcony", name: "Balcony Cleaning", icon: "🌿", price: 45 },
-  { id: "laundry", name: "Laundry", icon: "👕", price: 35 },
-  { id: "walls", name: "Wall Washing", icon: "🪣", price: 55 },
-];
-
-const DEF_FREQS = [
-  { id: "once", label: "One Time", disc: 0 },
-  { id: "weekly", label: "Every Week", disc: 10 },
-  { id: "fortnightly", label: "Every 2 Weeks", disc: 10 },
-  { id: "monthly", label: "Every 4 Weeks", disc: 5 },
-];
-
-const DEF_COUPONS = [
-  { code: "YAHWEH10", disc: 10, active: true },
-  { code: "YPC10", disc: 10, active: true },
-  { code: "WELCOME15", disc: 15, active: true },
-  { code: "NDIS20", disc: 20, active: true },
-];
-
-const DEF_CLIENTS = [
-  { id: "c1", name: "Sarah Mitchell", email: "sarah@example.com", password: "pass123", phone: "0411111111" },
-  { id: "c2", name: "James Lee", email: "james@example.com", password: "pass123", phone: "0422222222" },
-];
-
-const DEF_BOOKINGS = [
-  { id: "YPC1001", clientId: "c1", clientName: "Sarah Mitchell", clientEmail: "sarah@example.com", service: "House Cleaning", date: "2026-05-25", time: "9:00 AM", address: "12 Rose St, Blacktown NSW 2148", total: 130.90, status: "Confirmed", freq: "Every Week", extras: [] },
-  { id: "YPC1002", clientId: "c1", clientName: "Sarah Mitchell", clientEmail: "sarah@example.com", service: "Carpet Cleaning", date: "2026-04-10", time: "10:00 AM", address: "12 Rose St, Blacktown NSW 2148", total: 97.90, status: "Completed", freq: "One Time", extras: ["Oven Cleaning"] },
-  { id: "YPC1003", clientId: "c2", clientName: "James Lee", clientEmail: "james@example.com", service: "Office Cleaning", date: "2026-05-28", time: "8:00 AM", address: "45 Market St, Sydney NSW 2000", total: 152.90, status: "Pending", freq: "Every 2 Weeks", extras: [] },
-  { id: "YPC1004", clientId: "c2", clientName: "James Lee", clientEmail: "james@example.com", service: "NDIS Cleaning", date: "2026-03-15", time: "7:00 AM", address: "88 Hill Rd, Parramatta NSW 2150", total: 99.00, status: "Completed", freq: "One Time", extras: [] },
-];
-
-const TIME_SLOTS = ["7:00 AM", "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM"];
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // ── PRICE CALC ──
 function calcPrice(svc, beds, baths, freq, extras, couponPct) {
   if (!svc) return { subtotal: 0, discAmt: 0, couponDisc: 0, gst: 0, total: 0 };
   const isNDIS = svc.id === "ndis";
   const roomAdd = svc.hasRooms ? (beds - 1) * 20 + (baths - 1) * 15 : 0;
-  const extTotal = extras.reduce((s, e) => s + e.price, 0);
-  const sub = svc.base + roomAdd + extTotal;
-  const disc = freq.disc > 0 ? Math.round(sub * freq.disc / 100) : 0;
+  const extTotal = extras.reduce((s, e) => s + Number(e.price), 0);
+  const sub = Number(svc.base) + roomAdd + extTotal;
+  const disc = freq?.disc > 0 ? Math.round(sub * freq.disc / 100) : 0;
   const coup = couponPct > 0 ? Math.round((sub - disc) * couponPct / 100) : 0;
   const afterDisc = sub - disc - coup;
   const gst = isNDIS ? 0 : Math.round(afterDisc * 0.10 * 100) / 100;
   return { subtotal: sub, discAmt: disc, couponDisc: coup, gst, total: afterDisc + gst };
 }
 
-// ── COMPONENTS ──
+// ── SHARED COMPONENTS ──
 function Logo({ small }) {
   return <img src="/logo.png" alt="Yahweh Property Care" style={{ height: small ? 52 : 72, width: "auto", objectFit: "contain", display: "block", mixBlendMode: "multiply" }} />;
 }
@@ -157,6 +100,16 @@ function ConfirmDel({ msg, onYes, onNo }) {
   );
 }
 
+function Loader({ text = "Loading…" }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 200, gap: 12 }}>
+      <div style={{ width: 40, height: 40, border: `4px solid ${BORDER}`, borderTop: `4px solid ${BLUE}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ color: MUTED, fontSize: 14 }}>{text}</div>
+    </div>
+  );
+}
+
 function MobileBottomNav({ user, isAdmin }) {
   const path = window.location.pathname;
   const items = isAdmin
@@ -195,7 +148,7 @@ function Sidebar({ bk, coupon, setCoupon, couponPct, onApply, couponMsg }) {
       </div>
       <div style={{ padding: 20 }}>
         {!svc ? <div style={{ color: MUTED, fontSize: 13, textAlign: "center", padding: "20px 0" }}>Select a service to see pricing</div> : <>
-          {[["Cleaning Type", svc.name], ["Your Home", svc.hasRooms ? `${beds} bed, ${baths} bath` : "Flat rate"], ["Frequency", freq.label], ["Extras", extras.length ? extras.map(e => e.name).join(", ") : "—"]].map(([k, v]) => (
+          {[["Cleaning Type", svc.name], ["Your Home", svc.hasRooms ? `${beds} bed, ${baths} bath` : "Flat rate"], ["Frequency", freq?.label || ""], ["Extras", extras.length ? extras.map(e => e.name).join(", ") : "—"]].map(([k, v]) => (
             <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 9, fontSize: 13 }}>
               <span style={{ color: MUTED }}>{k}</span>
               <span style={{ fontWeight: 600, color: TEXT, textAlign: "right", maxWidth: "55%", fontSize: 12 }}>{v}</span>
@@ -217,8 +170,7 @@ function Sidebar({ bk, coupon, setCoupon, couponPct, onApply, couponMsg }) {
         </>}
       </div>
       <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: MUTED, borderTop: `1px solid ${BORDER}` }}>
-        <span style={{ color: GREEN }}>📞</span>
-        <a href="tel:1300925355" style={{ color: GREEN, fontWeight: 800, textDecoration: "none" }}>1300 925 355</a>
+        <a href="tel:1300925355" style={{ color: GREEN, fontWeight: 800, textDecoration: "none" }}>📞 1300 925 355</a>
       </div>
     </div>
   );
@@ -242,23 +194,25 @@ function MobilePriceStrip({ total, step, onNext, onBack }) {
 }
 
 // ── BOOKING APP ──
-function BookingApp({ user, services, extras, coupons, onComplete }) {
+function BookingApp({ user, services, extras, coupons, freqs, onComplete }) {
   const mobile = useIsMobile();
-  // Read freqs fresh from sessionStorage so admin changes apply live
-  const freqs = (() => { try { const f = sessionStorage.getItem("freqs"); return f ? JSON.parse(f) : DEF_FREQS; } catch (e) { return DEF_FREQS; } })();
   const [step, setStep] = useState(1);
   const [maxStep, setMaxStep] = useState(1);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [coupon, setCoupon] = useState("");
   const [couponPct, setCouponPct] = useState(0);
+  const [couponId, setCouponId] = useState(null);
   const [couponMsg, setCouponMsg] = useState(null);
   const [done, setDone] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const defFreq = freqs.find(f => f.id === "weekly") || freqs[0] || { id: "once", label: "One Time", disc: 0 };
   const [bk, setBk] = useState({
-    svc: services[0] || null, beds: 1, baths: 1, freq: freqs[1] || freqs[0], extras: [],
+    svc: services[0] || null, beds: 1, baths: 1, freq: defFreq, extras: [],
     date: null, time: "9:00 AM",
-    firstName: user ? user.name.split(" ")[0] : "", lastName: user ? user.name.split(" ").slice(1).join(" ") : "",
-    email: user ? user.email : "", phone: user ? user.phone : "",
+    firstName: user ? user.name.split(" ")[0] : "",
+    lastName: user ? user.name.split(" ").slice(1).join(" ") : "",
+    email: user ? user.email : "", phone: user ? user.phone || "" : "",
     address: "", suburb: "", state: "NSW", postcode: "", notes: "",
     cardName: "", cardNum: "", cardExp: "", cardCvv: "",
   });
@@ -269,10 +223,15 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
   const setV = (k, v) => setBk(p => ({ ...p, [k]: v }));
   const togExtra = ex => { const has = bk.extras.find(e => e.id === ex.id); setV("extras", has ? bk.extras.filter(e => e.id !== ex.id) : [...bk.extras, ex]); };
 
-  function applyC() {
+  async function applyC() {
     const cp = coupons.find(c => c.code === coupon && c.active);
-    if (cp) { setCouponPct(cp.disc); setCouponMsg({ ok: true, text: `✓ ${cp.disc}% discount applied!` }); }
-    else setCouponMsg({ ok: false, text: "✗ Invalid or inactive code." });
+    if (cp) {
+      setCouponPct(cp.disc);
+      setCouponId(cp.id || null);
+      setCouponMsg({ ok: true, text: `✓ ${cp.disc}% discount applied!` });
+    } else {
+      setCouponMsg({ ok: false, text: "✗ Invalid or inactive code." });
+    }
   }
 
   const VALS = [null, () => !!bk.svc, () => !!bk.date && !!bk.time, () => !!(bk.firstName && bk.lastName && bk.email && bk.phone && bk.address && bk.suburb && bk.postcode), () => !!(bk.cardName && bk.cardNum.length >= 16 && bk.cardExp && bk.cardCvv.length >= 3), () => true];
@@ -285,9 +244,99 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
     const ns = step + 1; setStep(ns); setMaxStep(m => Math.max(m, ns)); window.scrollTo(0, 0);
   }
 
-  function submit() {
-    const nb = { id: "YPC" + Math.floor(Math.random() * 9000 + 1000), clientId: user ? user.id : "guest", clientName: [bk.firstName, bk.lastName].join(" "), clientEmail: bk.email, service: bk.svc.name, date: bk.date ? bk.date.toISOString().split("T")[0] : "", time: bk.time, address: [bk.address, bk.suburb, bk.state, bk.postcode].filter(Boolean).join(", "), total, status: "Confirmed", freq: bk.freq.label, extras: bk.extras.map(e => e.name) };
-    onComplete(nb); setDone(true);
+  async function submit() {
+    setSubmitting(true);
+    try {
+      const fullName = [bk.firstName, bk.lastName].join(" ");
+      const address = [bk.address, bk.suburb, bk.state, bk.postcode].filter(Boolean).join(", ");
+
+      // 1. Upsert client
+      const { data: clientData, error: clientErr } = await supabase
+        .from("clients")
+        .upsert({ full_name: fullName, email: bk.email, phone: bk.phone, address: bk.address, city: bk.suburb, state: bk.state, zip: bk.postcode, notes: bk.notes }, { onConflict: "email" })
+        .select().single();
+      if (clientErr) throw clientErr;
+
+      // 2. Insert booking
+      const { data: bookingData, error: bookingErr } = await supabase
+        .from("bookings")
+        .insert({
+          client_id: clientData.id,
+          service_id: bk.svc.db_id || null,
+          extras: bk.extras.map(e => e.id),
+          coupon_id: couponId,
+          frequency: bk.freq.id,
+          scheduled_date: bk.date.toISOString().split("T")[0],
+          scheduled_time: bk.time,
+          status: "pending",
+          subtotal,
+          discount_amount: discAmt + (calcPrice(bk.svc, bk.beds, bk.baths, bk.freq, bk.extras, couponPct).couponDisc || 0),
+          total_price: total,
+          notes: bk.notes,
+        })
+        .select().single();
+      if (bookingErr) throw bookingErr;
+
+      // 3. Increment coupon use
+      if (couponId) {
+        await supabase.rpc("increment_coupon_uses", { coupon_id: couponId });
+      }
+
+      const bookingId = `YPC${bookingData.id.slice(0, 6).toUpperCase()}`;
+      const { couponDisc } = calcPrice(bk.svc, bk.beds, bk.baths, bk.freq, bk.extras, couponPct);
+
+      // 4. Send emails via Edge Function
+      try {
+        await supabase.functions.invoke("send-booking-email", {
+          body: {
+            type: "both",
+            booking: {
+              bookingId,
+              clientName: fullName,
+              clientEmail: bk.email,
+              phone: bk.phone,
+              service: bk.svc.name,
+              date: bk.date.toISOString().split("T")[0],
+              time: bk.time,
+              address,
+              freq: bk.freq.label,
+              extras: bk.extras.map(e => e.name),
+              notes: bk.notes,
+              subtotal,
+              discountAmount: discAmt + couponDisc,
+              gst,
+              total,
+              isNDIS: bk.svc.id === "ndis",
+            },
+          },
+        });
+      } catch (emailErr) {
+        console.warn("Email sending failed (booking still saved):", emailErr);
+      }
+
+      const nb = {
+        id: bookingId,
+        clientId: clientData.id,
+        clientName: fullName,
+        clientEmail: bk.email,
+        service: bk.svc.name,
+        date: bk.date.toISOString().split("T")[0],
+        time: bk.time,
+        address,
+        total,
+        status: "Confirmed",
+        freq: bk.freq.label,
+        extras: bk.extras.map(e => e.name),
+      };
+
+      onComplete(nb);
+      setDone(true);
+    } catch (err) {
+      console.error("Booking error:", err);
+      setError("Failed to save booking. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const today = new Date();
@@ -313,6 +362,7 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
 
   return (
     <div style={{ paddingBottom: mobile ? 130 : 0 }}>
+      {/* Step progress bar */}
       <div style={{ background: WHITE, borderBottom: `1px solid ${BORDER}`, overflowX: "auto" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", padding: mobile ? "0 8px" : "0 28px" }}>
           {STEPS.map((label, i) => { const n = i + 1, active = step === n, done2 = step > n, can = n <= maxStep; return (
@@ -333,31 +383,6 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
         </div>
       )}
 
-      {mobile && showSummary && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 500 }} onClick={() => setShowSummary(false)}>
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: WHITE, borderRadius: "20px 20px 0 0", padding: "20px 20px 80px", maxHeight: "80vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
-            <div style={{ width: 40, height: 4, background: BORDER, borderRadius: 2, margin: "0 auto 16px" }} />
-            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 16 }}>Booking Summary</div>
-            <div style={{ background: BG, borderRadius: 12, padding: 16 }}>
-              {[["Service", bk.svc.name], ["Property", bk.svc.hasRooms ? `${bk.beds} bed, ${bk.baths} bath` : "Flat rate"], ["Frequency", bk.freq.label]].map(([k, v]) => (
-                <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 14 }}><span style={{ color: MUTED }}>{k}</span><span style={{ fontWeight: 600 }}>{v}</span></div>
-              ))}
-              {bk.extras.map(e => <div key={e.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 14 }}><span style={{ color: MUTED }}>{e.name}</span><span style={{ fontWeight: 600, color: GREEN }}>+{fmt(e.price)}</span></div>)}
-              <hr style={{ border: "none", borderTop: `1px dashed ${BORDER}`, margin: "10px 0" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 14 }}><span style={{ color: MUTED }}>Subtotal</span><span style={{ fontWeight: 700 }}>{fmt(subtotal)}</span></div>
-              {discAmt > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 14, color: GREEN }}><span>Discount</span><span style={{ fontWeight: 700 }}>-{fmt(discAmt)}</span></div>}
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 14 }}><span style={{ color: MUTED }}>GST</span><span style={{ fontWeight: 700 }}>{isNDIS ? "GST Free" : fmt(gst)}</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}><span style={{ fontWeight: 800, fontSize: 16 }}>Total (AUD)</span><span style={{ fontWeight: 900, fontSize: 24, color: BLUE }}>{fmt(total)}</span></div>
-            </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-              <input value={coupon} onChange={e => setCoupon(e.target.value.toUpperCase())} placeholder="Promo code" style={{ ...S.inp, flex: 1 }} />
-              <button onClick={applyC} style={S.btn(BLUE, WHITE)}>Apply</button>
-            </div>
-            {couponMsg && <div style={{ fontSize: 13, marginTop: 6, color: couponMsg.ok ? GREEN : "#e74c3c", fontWeight: 600 }}>{couponMsg.text}</div>}
-          </div>
-        </div>
-      )}
-
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: mobile ? 16 : "24px 28px", display: mobile ? "block" : "grid", gridTemplateColumns: "1fr 300px", gap: 24 }}>
         <div>
           {step === 1 && <>
@@ -374,6 +399,7 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
                 );})}
               </div>
             </div>
+
             {bk.svc?.hasRooms && (
               <div style={S.panel(mobile)}>
                 <div style={S.secTitle(mobile)}>Bedrooms & Bathrooms</div>
@@ -389,6 +415,7 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
                 ))}
               </div>
             )}
+
             <div style={S.panel(mobile)}>
               <div style={S.secTitle(mobile)}>How often?</div>
               <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(auto-fill,minmax(170px,1fr))", gap: mobile ? 10 : 12 }}>
@@ -400,6 +427,7 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
                 );})}
               </div>
             </div>
+
             <div style={S.panel(mobile)}>
               <div style={S.secTitle(mobile)}>Extra services</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -412,14 +440,6 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
                 );})}
               </div>
             </div>
-            {!mobile && <div style={S.panel(false)}>
-              <div style={S.secTitle(false)}>Discount code</div>
-              <div style={{ display: "flex", gap: 10 }}>
-                <input value={coupon} onChange={e => setCoupon(e.target.value.toUpperCase())} placeholder="Enter code" style={{ ...S.inp, maxWidth: 220 }} />
-                <button onClick={applyC} style={S.btn(BLUE, WHITE)}>Apply</button>
-              </div>
-              {couponMsg && <div style={{ fontSize: 13, marginTop: 6, color: couponMsg.ok ? GREEN : "#e74c3c", fontWeight: 600 }}>{couponMsg.text}</div>}
-            </div>}
           </>}
 
           {step === 2 && (
@@ -454,7 +474,7 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
               <input value={bk.address} onChange={set("address")} placeholder="123 Main Street" style={S.inp} />
               <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "1fr 1fr 140px", gap: mobile ? 12 : 16, marginTop: 4 }}>
                 <div><div style={S.sLbl}>Suburb *</div><input value={bk.suburb} onChange={set("suburb")} placeholder="Blacktown" style={S.inp} /></div>
-                <div><div style={S.sLbl}>State</div><select value={bk.state} onChange={set("state")} style={S.inp}>{["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"].map(s => <option key={s}>{s}</option>)}</select></div>
+                <div><div style={S.sLbl}>State</div><select value={bk.state} onChange={set("state")} style={S.inp}>{["NSW","VIC","QLD","WA","SA","TAS","ACT","NT"].map(s => <option key={s}>{s}</option>)}</select></div>
                 {!mobile && <div><div style={S.sLbl}>Postcode *</div><input value={bk.postcode} onChange={set("postcode")} maxLength={4} placeholder="2148" style={S.inp} /></div>}
               </div>
               {mobile && <div style={{ marginTop: 12 }}><div style={S.sLbl}>Postcode *</div><input value={bk.postcode} onChange={set("postcode")} maxLength={4} placeholder="2148" style={{ ...S.inp, width: 140 }} /></div>}
@@ -503,8 +523,10 @@ function BookingApp({ user, services, extras, coupons, onComplete }) {
 
           {!mobile && (
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-              {step > 1 ? <button style={{ ...S.btn(WHITE, BLUE, BLUE) }} onClick={() => { setStep(s => s - 1); window.scrollTo(0, 0); }}>← Back</button> : <span />}
-              {step < 5 ? <button style={S.btn(BLUE, WHITE)} onClick={next}>Continue →</button> : <button style={{ ...S.btn(GREEN, WHITE), fontSize: 15 }} onClick={next}>✅ Confirm & Pay {fmt(total)}</button>}
+              {step > 1 ? <button style={S.btn(WHITE, BLUE, BLUE)} onClick={() => { setStep(s => s - 1); window.scrollTo(0, 0); }}>← Back</button> : <span />}
+              {step < 5
+                ? <button style={S.btn(BLUE, WHITE)} onClick={next}>Continue →</button>
+                : <button style={{ ...S.btn(GREEN, WHITE), fontSize: 15, opacity: submitting ? 0.7 : 1 }} onClick={next} disabled={submitting}>{submitting ? "Saving…" : `✅ Confirm & Pay ${fmt(total)}`}</button>}
             </div>
           )}
         </div>
@@ -528,8 +550,6 @@ function ClientDash({ user, bookings, onLogout, onBook }) {
   return (
     <div style={{ background: BG, minHeight: "100vh", paddingBottom: mobile ? 90 : 40 }}>
       <div style={{ background: `linear-gradient(135deg,${BLUE} 0%,#1565a8 60%,#0d4a7a 100%)`, padding: mobile ? "24px 16px 80px" : "32px 40px 90px", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -40, right: -40, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
-        <div style={{ position: "absolute", bottom: -60, left: -20, width: 160, height: 160, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
         <div style={{ position: "relative", zIndex: 1, maxWidth: 900, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -537,7 +557,7 @@ function ClientDash({ user, bookings, onLogout, onBook }) {
                 {user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
               </div>
               <div>
-                <div style={{ fontSize: mobile ? 11 : 12, color: "rgba(255,255,255,0.7)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Welcome back</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Welcome back</div>
                 <div style={{ fontSize: mobile ? 20 : 26, fontWeight: 900, color: WHITE }}>{user.name}</div>
                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 2 }}>{user.email}</div>
               </div>
@@ -552,99 +572,57 @@ function ClientDash({ user, bookings, onLogout, onBook }) {
 
       <div style={{ maxWidth: 900, margin: mobile ? "-40px 16px 0" : "-44px auto 0", position: "relative", zIndex: 2 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: mobile ? 10 : 16 }}>
-          {[{ icon: "📋", label: "Total Bookings", value: mine.length, color: BLUE, sub: "All time" }, { icon: "✅", label: "Completed", value: past.filter(b => b.status === "Completed").length, color: GREEN, sub: "Cleans done" }, { icon: "💰", label: "Total Spent", value: fmt(totalSpent), color: "#9b59b6", sub: "Inc. GST" }].map(({ icon, label, value, color, sub }) => (
+          {[{ icon: "📋", label: "Total Bookings", value: mine.length, color: BLUE }, { icon: "✅", label: "Completed", value: past.filter(b => b.status === "Completed").length, color: GREEN }, { icon: "💰", label: "Total Spent", value: fmt(totalSpent), color: "#9b59b6" }].map(({ icon, label, value, color }) => (
             <div key={label} style={{ background: WHITE, borderRadius: 14, padding: mobile ? "14px 12px" : 20, boxShadow: "0 8px 32px rgba(27,117,187,0.12)", border: `1px solid ${BORDER}` }}>
               <div style={{ fontSize: mobile ? 22 : 28, marginBottom: 6 }}>{icon}</div>
               <div style={{ fontSize: mobile ? 18 : 24, fontWeight: 900, color, lineHeight: 1 }}>{value}</div>
               <div style={{ fontSize: mobile ? 11 : 13, fontWeight: 700, color: TEXT, marginTop: 4 }}>{label}</div>
-              <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>{sub}</div>
             </div>
           ))}
         </div>
       </div>
 
       <div style={{ maxWidth: 900, margin: "0 auto", padding: mobile ? "16px 16px 0" : "24px 0 0" }}>
-        {nextBooking && (
-          <div style={{ background: WHITE, borderRadius: 16, border: `1px solid ${BORDER}`, padding: mobile ? 16 : "20px 24px", marginBottom: 20, boxShadow: "0 4px 16px rgba(27,117,187,0.08)", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-            <div style={{ width: mobile ? 44 : 52, height: mobile ? 44 : 52, background: LIGHT_BLUE, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: mobile ? 20 : 24, flexShrink: 0 }}>📅</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Next Appointment</div>
-              <div style={{ fontWeight: 800, fontSize: mobile ? 15 : 17, color: TEXT }}>{nextBooking.service}</div>
-              <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>{nextBooking.date} · {nextBooking.time}</div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <StatusTag s={nextBooking.status} />
-              <div style={{ fontSize: mobile ? 18 : 22, fontWeight: 900, color: BLUE, marginTop: 6 }}>{fmt(nextBooking.total)}</div>
-            </div>
-          </div>
-        )}
-
         <div style={{ display: "flex", gap: 4, marginBottom: 16, background: WHITE, borderRadius: 12, padding: 6, border: `1px solid ${BORDER}` }}>
           {[["upcoming", `Upcoming (${upcoming.length})`], ["past", `History (${past.length})`]].map(([id, label]) => (
             <button key={id} onClick={() => setActiveTab(id)} style={{ flex: 1, background: activeTab === id ? BLUE : "transparent", color: activeTab === id ? WHITE : MUTED, border: "none", borderRadius: 9, padding: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{label}</button>
           ))}
         </div>
 
-        {activeTab === "upcoming" && (upcoming.length === 0 ? (
-          <div style={{ background: WHITE, borderRadius: 16, border: `1px solid ${BORDER}`, padding: "48px 24px", textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>📅</div>
-            <div style={{ fontWeight: 800, fontSize: 17, color: TEXT, marginBottom: 6 }}>No upcoming bookings</div>
-            <div style={{ color: MUTED, fontSize: 14, marginBottom: 20 }}>Schedule your next clean today</div>
-            <button onClick={onBook} style={{ background: BLUE, color: WHITE, border: "none", borderRadius: 10, padding: "12px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Book a Clean</button>
-          </div>
-        ) : <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{upcoming.map(b => <BookingCard key={b.id} b={b} mobile={mobile} />)}</div>)}
+        {activeTab === "upcoming" && (upcoming.length === 0
+          ? <div style={{ background: WHITE, borderRadius: 16, border: `1px solid ${BORDER}`, padding: "48px 24px", textAlign: "center" }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>📅</div>
+              <div style={{ fontWeight: 800, fontSize: 17, color: TEXT, marginBottom: 6 }}>No upcoming bookings</div>
+              <button onClick={onBook} style={{ background: BLUE, color: WHITE, border: "none", borderRadius: 10, padding: "12px 28px", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 12 }}>Book a Clean</button>
+            </div>
+          : <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{upcoming.map(b => <BookingCard key={b.id} b={b} mobile={mobile} />)}</div>
+        )}
 
-        {activeTab === "past" && (past.length === 0 ? (
-          <div style={{ background: WHITE, borderRadius: 16, border: `1px solid ${BORDER}`, padding: "48px 24px", textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>🧹</div>
-            <div style={{ fontWeight: 800, fontSize: 17, color: TEXT, marginBottom: 6 }}>No past bookings yet</div>
-            <div style={{ color: MUTED, fontSize: 14 }}>Your completed bookings will appear here</div>
-          </div>
-        ) : <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{past.map(b => <BookingCard key={b.id} b={b} mobile={mobile} />)}</div>)}
-
-        <div style={{ marginTop: 24 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: TEXT, marginBottom: 12 }}>Quick Actions</div>
-          <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(3,1fr)", gap: 12 }}>
-            {[{ icon: "🧹", label: "Book a Clean", sub: "Schedule new service", action: onBook, color: BLUE, bg: LIGHT_BLUE }, { icon: "📞", label: "Call Us", sub: "1300 925 355", action: () => window.location.href = "tel:1300925355", color: GREEN, bg: LIGHT_GREEN }, { icon: "🌐", label: "Our Website", sub: "yahwehpc.com.au", action: () => window.open("https://yahwehpc.com.au", "_blank"), color: "#9b59b6", bg: "#f5f0ff" }].map(({ icon, label, sub, action, color, bg }) => (
-              <div key={label} onClick={action} style={{ background: WHITE, borderRadius: 14, border: `1px solid ${BORDER}`, padding: 16, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 44, height: 44, background: bg, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{icon}</div>
-                <div><div style={{ fontWeight: 700, fontSize: 13, color }}>{label}</div><div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{sub}</div></div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {activeTab === "past" && (past.length === 0
+          ? <div style={{ background: WHITE, borderRadius: 16, border: `1px solid ${BORDER}`, padding: "48px 24px", textAlign: "center" }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>🧹</div>
+              <div style={{ fontWeight: 800, fontSize: 17, color: TEXT, marginBottom: 6 }}>No past bookings yet</div>
+            </div>
+          : <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{past.map(b => <BookingCard key={b.id} b={b} mobile={mobile} />)}</div>
+        )}
       </div>
     </div>
   );
 }
 
 function BookingCard({ b, mobile }) {
-  const si = { Confirmed: "✅", Pending: "⏳", Completed: "🏆", Cancelled: "❌" };
   return (
     <div style={{ background: WHITE, borderRadius: 14, border: `1px solid ${BORDER}`, overflow: "hidden", boxShadow: "0 2px 10px rgba(27,117,187,0.06)" }}>
       <div style={{ background: b.status === "Completed" ? LIGHT_GREEN : b.status === "Cancelled" ? "#fdecea" : LIGHT_BLUE, padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${BORDER}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 16 }}>{si[b.status] || "📋"}</span>
-          <span style={{ fontWeight: 800, fontSize: 13, color: b.status === "Completed" ? GREEN : b.status === "Cancelled" ? "#e74c3c" : BLUE }}>{b.service}</span>
-        </div>
+        <span style={{ fontWeight: 800, fontSize: 13, color: BLUE }}>{b.service}</span>
         <StatusTag s={b.status} />
       </div>
       <div style={{ padding: mobile ? 14 : "16px 20px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: mobile ? 10 : 16, marginBottom: 12 }}>
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ width: 36, height: 36, background: LIGHT_BLUE, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>📅</div>
-            <div><div style={{ fontSize: 10, color: MUTED, fontWeight: 700, textTransform: "uppercase", letterSpacing: .8 }}>Date & Time</div><div style={{ fontWeight: 700, fontSize: 13, color: TEXT, marginTop: 1 }}>{b.date}</div><div style={{ fontSize: 12, color: MUTED }}>{b.time}</div></div>
-          </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ width: 36, height: 36, background: LIGHT_GREEN, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>📍</div>
-            <div style={{ minWidth: 0 }}><div style={{ fontSize: 10, color: MUTED, fontWeight: 700, textTransform: "uppercase", letterSpacing: .8 }}>Location</div><div style={{ fontWeight: 600, fontSize: 12, color: TEXT, marginTop: 1, lineHeight: 1.4, wordBreak: "break-word" }}>{b.address}</div></div>
-          </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 4 }}>
+          <div style={{ fontSize: 13, color: MUTED }}>{b.date} · {b.time}</div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: BLUE }}>{fmt(b.total)}</div>
         </div>
-        {b.extras && b.extras.length > 0 && <div style={{ background: BG, borderRadius: 8, padding: "8px 12px", marginBottom: 12, fontSize: 12, color: MUTED }}><span style={{ fontWeight: 700, color: GREEN }}>Extras: </span>{b.extras.join(", ")}</div>}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 10, borderTop: `1px dashed ${BORDER}` }}>
-          <div style={{ fontSize: 12, color: MUTED }}>🔄 {b.freq}</div>
-          <div><div style={{ fontSize: 18, fontWeight: 900, color: BLUE, textAlign: "right" }}>{fmt(b.total)}</div><div style={{ fontSize: 10, color: MUTED, textAlign: "right" }}>Inc. GST</div></div>
-        </div>
+        {b.extras && b.extras.length > 0 && <div style={{ fontSize: 12, color: MUTED, marginTop: 8 }}><span style={{ fontWeight: 700, color: GREEN }}>Extras: </span>{b.extras.join(", ")}</div>}
       </div>
     </div>
   );
@@ -658,7 +636,8 @@ function SvcForm({ data, onSave }) {
     {[["Service Name", "name", "text", "e.g. Window Cleaning"], ["Base Price ($)", "base", "number", "119"]].map(([l, k, t, p]) => (
       <div key={k} style={{ marginBottom: 14 }}><div style={S.sLbl}>{l}</div><input type={t} value={f[k] || ""} onChange={set(k)} placeholder={p} style={S.inp} /></div>
     ))}
-    <div style={{ marginBottom: 20 }}><div style={S.sLbl}>Room-based pricing?</div>
+    <div style={{ marginBottom: 20 }}>
+      <div style={S.sLbl}>Room-based pricing?</div>
       <div style={{ display: "flex", gap: 10 }}>
         {[["Yes", true], ["No", false]].map(([l, v]) => (
           <div key={l} onClick={() => setF(p => ({ ...p, hasRooms: v }))} style={{ border: `2px solid ${f.hasRooms === v ? BLUE : BORDER}`, borderRadius: 9, padding: "9px 24px", cursor: "pointer", background: f.hasRooms === v ? LIGHT_BLUE : WHITE, color: f.hasRooms === v ? BLUE : MUTED, fontWeight: 700, fontSize: 13 }}>{l}</div>
@@ -701,117 +680,12 @@ function ClientForm({ data, onSave }) {
   </>;
 }
 
-// ── DISCOUNTS TAB ──
-function DiscountsTab({ freqs, setFreqs, mobile }) {
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ label: "", disc: 0 });
-  const [addModal, setAddModal] = useState(false);
-  const [addForm, setAddForm] = useState({ label: "", disc: 0 });
-
-  function saveEdit() {
-    const updated = freqs.map(f => f.id === editing ? { ...f, ...form, disc: Number(form.disc) } : f);
-    setFreqs(updated);
-    sessionStorage.setItem("freqs", JSON.stringify(updated));
-    setEditing(null);
-  }
-
-  function addFreq() {
-    if (!addForm.label) { alert("Label required"); return; }
-    const updated = [...freqs, { id: "freq" + uid(), label: addForm.label, disc: Number(addForm.disc), active: true }];
-    setFreqs(updated);
-    sessionStorage.setItem("freqs", JSON.stringify(updated));
-    setAddForm({ label: "", disc: 0 });
-    setAddModal(false);
-  }
-
-  function delFreq(id) {
-    const updated = freqs.filter(f => f.id !== id);
-    setFreqs(updated);
-    sessionStorage.setItem("freqs", JSON.stringify(updated));
-  }
-
-  const DEFAULT_IDS = ["once", "weekly", "fortnightly", "monthly"];
-
-  return (
-    <>
-      <div style={{ background: `linear-gradient(135deg,${LIGHT_BLUE},${WHITE})`, borderRadius: 14, padding: "20px 24px", marginBottom: 20, border: `1px solid ${BLUE}22` }}>
-        <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Discount Management</div>
-        <div style={{ fontSize: 16, fontWeight: 800, color: TEXT, marginBottom: 4 }}>Manage frequency discounts & room pricing</div>
-        <div style={{ fontSize: 13, color: MUTED }}>These discounts apply automatically when customers select a cleaning frequency.</div>
-      </div>
-
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: 15, color: TEXT }}>Frequency Discounts</div>
-            <div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>Edit discount % for each frequency option</div>
-          </div>
-          <button style={{ ...S.btn(BLUE, WHITE), padding: "9px 16px", fontSize: 13 }} onClick={() => setAddModal(true)}>+ Add Frequency</button>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(auto-fill,minmax(260px,1fr))", gap: 12 }}>
-          {freqs.map(f => (
-            <div key={f.id} style={{ background: WHITE, borderRadius: 12, border: `1px solid ${editing === f.id ? BLUE : BORDER}`, overflow: "hidden" }}>
-              <div style={{ background: f.disc > 0 ? `linear-gradient(135deg,${LIGHT_GREEN},${WHITE})` : BG, padding: "16px 20px", borderBottom: `1px solid ${BORDER}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: 15, color: TEXT }}>{f.label}</div>
-                  <div style={{ fontSize: 26, fontWeight: 900, color: f.disc > 0 ? GREEN : MUTED, marginTop: 2 }}>{f.disc > 0 ? `${f.disc}% off` : "No discount"}</div>
-                </div>
-                <div style={{ fontSize: 32 }}>{f.disc > 0 ? "💸" : "💰"}</div>
-              </div>
-              {editing === f.id ? (
-                <div style={{ padding: "14px 16px" }}>
-                  <div style={{ marginBottom: 10 }}><div style={S.sLbl}>Label</div><input value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} style={S.inp} /></div>
-                  <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Discount (%)</div><input type="number" min={0} max={100} value={form.disc} onChange={e => setForm(p => ({ ...p, disc: e.target.value }))} style={S.inp} /></div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={saveEdit} style={{ ...S.btn(GREEN, WHITE), flex: 1, padding: "9px", fontSize: 13 }}>✅ Save</button>
-                    <button onClick={() => setEditing(null)} style={{ ...S.btn(BG, MUTED, BORDER), flex: 1, padding: "9px", fontSize: 13 }}>Cancel</button>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ padding: "12px 14px", display: "flex", gap: 8 }}>
-                  <button onClick={() => { setEditing(f.id); setForm({ label: f.label, disc: f.disc }); }} style={{ ...S.btn(LIGHT_BLUE, BLUE), flex: 1, padding: "8px", fontSize: 13 }}>✏️ Edit</button>
-                  {!DEFAULT_IDS.includes(f.id)
-                    ? <button onClick={() => delFreq(f.id)} style={{ ...S.btn("#fdecea", "#e74c3c"), flex: 1, padding: "8px", fontSize: 13 }}>🗑 Delete</button>
-                    : <div style={{ flex: 1, background: BG, borderRadius: 9, padding: "8px", fontSize: 11, color: MUTED, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" }}>Default</div>}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 16 }}>
-        {[{ icon: "🛏", label: "Extra Bedroom", sub: "Per additional bedroom beyond 1st", value: "A$20 each" }, { icon: "🛁", label: "Extra Bathroom", sub: "Per additional bathroom beyond 1st", value: "A$15 each" }].map(item => (
-          <div key={item.label} style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: "18px 20px", display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 48, height: 48, background: LIGHT_BLUE, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{item.icon}</div>
-            <div style={{ flex: 1 }}><div style={{ fontWeight: 800, fontSize: 14 }}>{item.label}</div><div style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>{item.sub}</div></div>
-            <div style={{ fontWeight: 900, fontSize: 18, color: BLUE }}>{item.value}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ background: LIGHT_GREEN, borderRadius: 12, border: `1px solid ${GREEN}33`, padding: "16px 20px" }}>
-        <div style={{ fontWeight: 800, fontSize: 14, color: GREEN, marginBottom: 6 }}>💙 NDIS Cleaning — GST Free</div>
-        <div style={{ fontSize: 13, color: TEXT }}>NDIS Cleaning is exempt from the 10% GST. All other services include GST automatically.</div>
-      </div>
-
-      {addModal && (
-        <Modal title="Add New Frequency" onClose={() => setAddModal(false)}>
-          <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Frequency Label</div><input value={addForm.label} onChange={e => setAddForm(p => ({ ...p, label: e.target.value }))} placeholder="e.g. Every 3 Weeks" style={S.inp} /></div>
-          <div style={{ marginBottom: 20 }}><div style={S.sLbl}>Discount (%)</div><input type="number" min={0} max={100} value={addForm.disc} onChange={e => setAddForm(p => ({ ...p, disc: e.target.value }))} placeholder="0" style={S.inp} /></div>
-          <button style={{ ...S.btn(BLUE, WHITE), width: "100%", padding: 14 }} onClick={addFreq}>Add Frequency</button>
-        </Modal>
-      )}
-    </>
-  );
-}
-
 // ── ADMIN DASHBOARD ──
-function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClients, services, setServices, extras, setExtras, coupons, setCoupons, freqs, setFreqs, onLogout }) {
+function AdminDash({ bookings, setBookings, clients, setClients, services, setServices, extras, setExtras, coupons, setCoupons, freqs, setFreqs, onLogout }) {
   const mobile = useIsMobile();
   const adminUser = (() => { try { const a = sessionStorage.getItem("adminUser"); return a ? JSON.parse(a) : null; } catch (e) { return null; } })();
   const isSuperAdmin = checkSuperAdmin(adminUser);
-  const [tab, setTab] = useState(isSuperAdmin ? "admins" : "bookings");
+  const [tab, setTab] = useState("bookings");
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [confirm, setConfirm] = useState(null);
@@ -820,18 +694,10 @@ function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClien
   const [couponModal, setCouponModal] = useState(null);
   const [clientModal, setClientModal] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [inviteModal, setInviteModal] = useState(false);
-  const [changePwModal, setChangePwModal] = useState(false);
-  const [resetPwModal, setResetPwModal] = useState(null);
-  const [inviteForm, setInviteForm] = useState({ name: "", email: "", password: "" });
-  const [changePwForm, setChangePwForm] = useState({ current: "", newPw: "", confirm: "" });
-  const [changePwErr, setChangePwErr] = useState("");
-  const [changePwOk, setChangePwOk] = useState(false);
-  const [resetPwForm, setResetPwForm] = useState({ newPw: "", confirm: "" });
+  const [saving, setSaving] = useState(false);
 
   const SC = { Pending: "#e67e22", Confirmed: BLUE, Completed: GREEN, Cancelled: "#e74c3c" };
   const TABS = [
-    ...(isSuperAdmin ? [{ id: "admins", label: "Manage Admins", icon: "⭐" }] : []),
     { id: "bookings", label: "Bookings", icon: "📋" },
     { id: "clients", label: "Clients", icon: "👥" },
     { id: "services", label: "Services", icon: "🏠" },
@@ -848,84 +714,114 @@ function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClien
 
   const revenue = bookings.filter(b => b.status === "Completed").reduce((s, b) => s + b.total, 0);
 
-  function updBk(id, status) { setBookings(p => p.map(b => b.id === id ? { ...b, status } : b)); }
-  function delBk(id) { setConfirm({ msg: `Delete booking ${id}?`, action: () => { setBookings(p => p.filter(b => b.id !== id)); setConfirm(null); } }); }
-  function delClient(id) { setConfirm({ msg: "Delete this client?", action: () => { setClients(p => p.filter(c => c.id !== id)); setBookings(p => p.filter(b => b.clientId !== id)); setConfirm(null); } }); }
-  function saveClient(d) { if (d.id) setClients(p => p.map(c => c.id === d.id ? d : c)); else setClients(p => [...p, { ...d, id: "c" + uid() }]); setClientModal(null); }
-  function saveSvc(d) { if (d.id) setServices(p => p.map(s => s.id === d.id ? { ...d, base: Number(d.base), icon: s.icon } : s)); else setServices(p => [...p, { ...d, id: "s" + uid(), base: Number(d.base), icon: "🧹" }]); setSvcModal(null); }
-  function delSvc(id) { setConfirm({ msg: "Delete this service?", action: () => { setServices(p => p.filter(s => s.id !== id)); setConfirm(null); } }); }
-  function saveExtra(d) { if (d.id) setExtras(p => p.map(e => e.id === d.id ? { ...d, price: Number(d.price), icon: e.icon } : e)); else setExtras(p => [...p, { ...d, id: "e" + uid(), price: Number(d.price), icon: "✨" }]); setExtraModal(null); }
-  function delExtra(id) { setConfirm({ msg: "Delete this add-on?", action: () => { setExtras(p => p.filter(e => e.id !== id)); setConfirm(null); } }); }
-  function saveCoupon(d) { if (d._edit) setCoupons(p => p.map(c => c.code === d._orig ? { code: d.code, disc: Number(d.disc), active: d.active } : c)); else { if (coupons.find(c => c.code === d.code)) { alert("Code exists"); return; } setCoupons(p => [...p, { code: d.code.toUpperCase(), disc: Number(d.disc), active: true }]); } setCouponModal(null); }
-  function delCoupon(code) { setConfirm({ msg: `Delete coupon ${code}?`, action: () => { setCoupons(p => p.filter(c => c.code !== code)); setConfirm(null); } }); }
-
-  // Merge hardcoded + session admins
-  const allAdmins = (() => {
-    const merged = [...HARDCODED_ADMINS];
-    admins.forEach(a => { if (!merged.find(m => m.id === a.id)) merged.push(a); else { const i = merged.findIndex(m => m.id === a.id); merged[i] = a; } });
-    return merged;
-  })();
-
-  function inviteAdmin() {
-    if (!inviteForm.name || !inviteForm.email || !inviteForm.password) { alert("All fields required"); return; }
-    if (allAdmins.find(a => a.email.toLowerCase() === inviteForm.email.toLowerCase())) { alert("Email already exists"); return; }
-    const newAdmin = { id: "a" + uid(), name: inviteForm.name, email: inviteForm.email, password: inviteForm.password, role: "admin" };
-    const updated = [...admins, newAdmin];
-    setAdmins(updated);
-    sessionStorage.setItem("adminList", JSON.stringify(updated));
-    setInviteForm({ name: "", email: "", password: "" });
-    setInviteModal(false);
-    alert(`✅ Admin "${newAdmin.name}" created!\n\nIMPORTANT: Add this admin to HARDCODED_ADMINS in App.js so they can login from any device:\n{ id:"${newAdmin.id}", name:"${newAdmin.name}", email:"${newAdmin.email}", password:"${newAdmin.password}", role:"admin" }`);
+  // ── Supabase write helpers ──
+  async function updBk(id, status) {
+    const dbId = bookings.find(b => b.id === id)?.db_id;
+    if (dbId) await supabase.from("bookings").update({ status: status.toLowerCase() }).eq("id", dbId);
+    setBookings(p => p.map(b => b.id === id ? { ...b, status } : b));
   }
 
-  function delAdmin(id) {
-    setConfirm({ msg: "Delete this admin?", action: () => {
-      const updated = admins.filter(a => a.id !== id);
-      setAdmins(updated);
-      sessionStorage.setItem("adminList", JSON.stringify(updated));
+  async function delBk(id) {
+    setConfirm({ msg: `Delete booking ${id}?`, action: async () => {
+      const dbId = bookings.find(b => b.id === id)?.db_id;
+      if (dbId) await supabase.from("bookings").delete().eq("id", dbId);
+      setBookings(p => p.filter(b => b.id !== id));
       setConfirm(null);
     }});
   }
 
-  function resetAdminPw() {
-    if (!resetPwForm.newPw || resetPwForm.newPw !== resetPwForm.confirm) { alert("Passwords don't match"); return; }
-    const updated = admins.map(a => a.id === resetPwModal.id ? { ...a, password: resetPwForm.newPw } : a);
-    setAdmins(updated);
-    sessionStorage.setItem("adminList", JSON.stringify(updated));
-    setResetPwModal(null);
-    setResetPwForm({ newPw: "", confirm: "" });
-    alert("✅ Password reset! Also update HARDCODED_ADMINS in App.js if needed.");
+  async function delClient(id) {
+    setConfirm({ msg: "Delete this client and their bookings?", action: async () => {
+      await supabase.from("bookings").delete().eq("client_id", id);
+      await supabase.from("clients").delete().eq("id", id);
+      setClients(p => p.filter(c => c.id !== id));
+      setBookings(p => p.filter(b => b.clientId !== id));
+      setConfirm(null);
+    }});
   }
 
-  function changeOwnPw() {
-    setChangePwErr("");
-    if (changePwForm.current !== adminUser.password) { setChangePwErr("Current password is incorrect."); return; }
-    if (changePwForm.newPw.length < 6) { setChangePwErr("Must be at least 6 characters."); return; }
-    if (changePwForm.newPw !== changePwForm.confirm) { setChangePwErr("Passwords don't match."); return; }
-    const updated = admins.map(a => a.id === adminUser.id ? { ...a, password: changePwForm.newPw } : a);
-    setAdmins(updated);
-    sessionStorage.setItem("adminList", JSON.stringify(updated));
-    sessionStorage.setItem("adminUser", JSON.stringify({ ...adminUser, password: changePwForm.newPw }));
-    setChangePwOk(true);
-    setChangePwForm({ current: "", newPw: "", confirm: "" });
-    setTimeout(() => { setChangePwOk(false); setChangePwModal(false); }, 2000);
+  async function saveSvc(d) {
+    setSaving(true);
+    if (d.db_id) {
+      await supabase.from("services").update({ name: d.name, base_price: Number(d.base), has_rooms: d.hasRooms }).eq("id", d.db_id);
+      setServices(p => p.map(s => s.id === d.id ? { ...d, base: Number(d.base) } : s));
+    } else {
+      const { data } = await supabase.from("services").insert({ name: d.name, base_price: Number(d.base), has_rooms: d.hasRooms, is_active: true }).select().single();
+      if (data) setServices(p => [...p, { id: data.id, db_id: data.id, name: data.name, base: data.base_price, hasRooms: data.has_rooms, icon: "🧹" }]);
+    }
+    setSvcModal(null); setSaving(false);
+  }
+
+  async function delSvc(id) {
+    setConfirm({ msg: "Delete this service?", action: async () => {
+      const dbId = services.find(s => s.id === id)?.db_id;
+      if (dbId) await supabase.from("services").delete().eq("id", dbId);
+      setServices(p => p.filter(s => s.id !== id));
+      setConfirm(null);
+    }});
+  }
+
+  async function saveExtra(d) {
+    setSaving(true);
+    if (d.db_id) {
+      await supabase.from("extras").update({ name: d.name, price: Number(d.price) }).eq("id", d.db_id);
+      setExtras(p => p.map(e => e.id === d.id ? { ...d, price: Number(d.price) } : e));
+    } else {
+      const { data } = await supabase.from("extras").insert({ name: d.name, price: Number(d.price), is_active: true }).select().single();
+      if (data) setExtras(p => [...p, { id: data.id, db_id: data.id, name: data.name, price: data.price, icon: "✨" }]);
+    }
+    setExtraModal(null); setSaving(false);
+  }
+
+  async function delExtra(id) {
+    setConfirm({ msg: "Delete this add-on?", action: async () => {
+      const dbId = extras.find(e => e.id === id)?.db_id;
+      if (dbId) await supabase.from("extras").delete().eq("id", dbId);
+      setExtras(p => p.filter(e => e.id !== id));
+      setConfirm(null);
+    }});
+  }
+
+  async function saveCoupon(d) {
+    setSaving(true);
+    if (d._edit) {
+      const orig = coupons.find(c => c.code === d._orig);
+      if (orig?.db_id) await supabase.from("coupons").update({ code: d.code, discount_value: Number(d.disc) }).eq("id", orig.db_id);
+      setCoupons(p => p.map(c => c.code === d._orig ? { ...c, code: d.code, disc: Number(d.disc) } : c));
+    } else {
+      if (coupons.find(c => c.code === d.code)) { alert("Code exists"); setSaving(false); return; }
+      const { data } = await supabase.from("coupons").insert({ code: d.code.toUpperCase(), discount_type: "percent", discount_value: Number(d.disc), is_active: true }).select().single();
+      if (data) setCoupons(p => [...p, { db_id: data.id, code: data.code, disc: data.discount_value, active: true }]);
+    }
+    setCouponModal(null); setSaving(false);
+  }
+
+  async function delCoupon(code) {
+    setConfirm({ msg: `Delete coupon ${code}?`, action: async () => {
+      const dbId = coupons.find(c => c.code === code)?.db_id;
+      if (dbId) await supabase.from("coupons").delete().eq("id", dbId);
+      setCoupons(p => p.filter(c => c.code !== code));
+      setConfirm(null);
+    }});
+  }
+
+  async function toggleCoupon(code) {
+    const cp = coupons.find(c => c.code === code);
+    if (cp?.db_id) await supabase.from("coupons").update({ is_active: !cp.active }).eq("id", cp.db_id);
+    setCoupons(p => p.map(c => c.code === code ? { ...c, active: !c.active } : c));
   }
 
   const NavContent = () => (
     <>
       <div style={{ padding: "0 20px 16px", borderBottom: `1px solid ${BORDER}`, marginBottom: 12 }}>
-        {isSuperAdmin
-          ? <div style={{ background: `linear-gradient(135deg,${BLUE},#2196f3)`, borderRadius: 8, padding: "6px 12px", display: "inline-flex" }}><span style={{ fontSize: 11, color: WHITE, fontWeight: 800 }}>⭐ Super Admin — {adminUser?.name}</span></div>
-          : <div style={{ fontSize: 12, color: MUTED, fontWeight: 600 }}>👤 {adminUser?.name}</div>}
+        <div style={{ fontSize: 12, color: MUTED, fontWeight: 600 }}>👤 {adminUser?.name}</div>
       </div>
       {TABS.map(({ id, label, icon }) => (
-        <div key={id} onClick={() => { setTab(id); setMenuOpen(false); }} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 20px", cursor: "pointer", background: tab === id ? LIGHT_BLUE : "transparent", color: tab === id ? BLUE : id === "admins" ? GREEN : MUTED, borderRight: tab === id ? `3px solid ${BLUE}` : "3px solid transparent", fontWeight: tab === id ? 700 : 500, fontSize: 14, marginBottom: 2 }}>
+        <div key={id} onClick={() => { setTab(id); setMenuOpen(false); }} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 20px", cursor: "pointer", background: tab === id ? LIGHT_BLUE : "transparent", color: tab === id ? BLUE : MUTED, borderRight: tab === id ? `3px solid ${BLUE}` : "3px solid transparent", fontWeight: tab === id ? 700 : 500, fontSize: 14, marginBottom: 2 }}>
           <span style={{ fontSize: 18 }}>{icon}</span>{label}
-          {id === "admins" && <span style={{ marginLeft: "auto", background: GREEN, color: WHITE, borderRadius: 50, padding: "1px 8px", fontSize: 10, fontWeight: 800 }}>SA</span>}
         </div>
       ))}
       <div style={{ padding: "14px 20px", borderTop: `1px solid ${BORDER}`, marginTop: 12 }}>
-        {!isSuperAdmin && <button onClick={() => { setChangePwModal(true); setMenuOpen(false); }} style={{ ...S.btn(LIGHT_BLUE, BLUE), width: "100%", padding: "9px", fontSize: 12, marginBottom: 8 }}>🔒 Change Password</button>}
         <button onClick={onLogout} style={{ ...S.btn(WHITE, MUTED, BORDER), width: "100%", padding: "10px", fontSize: 13 }}>Logout</button>
       </div>
     </>
@@ -937,39 +833,12 @@ function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClien
       {svcModal && <Modal title={svcModal.mode === "add" ? "Add Service" : "Edit Service"} onClose={() => setSvcModal(null)}><SvcForm data={svcModal.data} onSave={saveSvc} /></Modal>}
       {extraModal && <Modal title={extraModal.mode === "add" ? "Add Add-on" : "Edit Add-on"} onClose={() => setExtraModal(null)}><ExtraForm data={extraModal.data} onSave={saveExtra} /></Modal>}
       {couponModal && <Modal title={couponModal.mode === "add" ? "Add Coupon" : "Edit Coupon"} onClose={() => setCouponModal(null)}><CouponForm data={couponModal.data} onSave={saveCoupon} /></Modal>}
-      {clientModal && <Modal title={clientModal.mode === "add" ? "Add Client" : "Edit Client"} onClose={() => setClientModal(null)}><ClientForm data={clientModal.data} onSave={saveClient} /></Modal>}
-
-      {inviteModal && <Modal title="Invite New Admin" onClose={() => setInviteModal(false)}>
-        {[["Full Name", "name", "text", "e.g. John Smith"], ["Email Address", "email", "email", "john@example.com"], ["Password", "password", "text", "StrongPass123"]].map(([l, k, t, p]) => (
-          <div key={k} style={{ marginBottom: 14 }}><div style={S.sLbl}>{l}</div><input type={t} value={inviteForm[k]} onChange={e => setInviteForm(f => ({ ...f, [k]: e.target.value }))} placeholder={p} style={S.inp} /></div>
-        ))}
-        <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 9, padding: "10px 14px", fontSize: 13, color: "#7a5c00", marginBottom: 14 }}>⚠️ After creating, you must also add this admin to HARDCODED_ADMINS in App.js for them to login from any device.</div>
-        <button style={{ ...S.btn(GREEN, WHITE), width: "100%", padding: 14 }} onClick={inviteAdmin}>Create Admin Account</button>
-      </Modal>}
-
-      {changePwModal && <Modal title="Change My Password" onClose={() => { setChangePwModal(false); setChangePwErr(""); setChangePwOk(false); }}>
-        {[["Current Password", "current", "password"], ["New Password", "newPw", "password"], ["Confirm New Password", "confirm", "password"]].map(([l, k, t]) => (
-          <div key={k} style={{ marginBottom: 14 }}><div style={S.sLbl}>{l}</div><input type={t} value={changePwForm[k]} onChange={e => setChangePwForm(f => ({ ...f, [k]: e.target.value }))} placeholder="••••••••" style={S.inp} /></div>
-        ))}
-        {changePwErr && <div style={{ color: "#e74c3c", fontSize: 13, marginBottom: 10, background: "#fdecea", borderRadius: 8, padding: "8px 12px" }}>{changePwErr}</div>}
-        {changePwOk && <div style={{ color: GREEN, fontSize: 13, marginBottom: 10, background: LIGHT_GREEN, borderRadius: 8, padding: "8px 12px" }}>✅ Password changed!</div>}
-        <button style={{ ...S.btn(BLUE, WHITE), width: "100%", padding: 14 }} onClick={changeOwnPw}>Update Password</button>
-      </Modal>}
-
-      {resetPwModal && <Modal title={`Reset Password — ${resetPwModal.name}`} onClose={() => { setResetPwModal(null); setResetPwForm({ newPw: "", confirm: "" }); }}>
-        <div style={{ background: "#fff8e1", borderRadius: 9, padding: "10px 14px", fontSize: 13, color: "#7a5c00", marginBottom: 16 }}>⚠️ Resetting password for <strong>{resetPwModal.email}</strong></div>
-        {[["New Password", "newPw", "password"], ["Confirm Password", "confirm", "password"]].map(([l, k, t]) => (
-          <div key={k} style={{ marginBottom: 14 }}><div style={S.sLbl}>{l}</div><input type={t} value={resetPwForm[k]} onChange={e => setResetPwForm(f => ({ ...f, [k]: e.target.value }))} placeholder="••••••••" style={S.inp} /></div>
-        ))}
-        <button style={{ ...S.btn(BLUE, WHITE), width: "100%", padding: 14 }} onClick={resetAdminPw}>Reset Password</button>
-      </Modal>}
+      {clientModal && <Modal title={clientModal.mode === "add" ? "Add Client" : "Edit Client"} onClose={() => setClientModal(null)}><ClientForm data={clientModal.data} onSave={() => setClientModal(null)} /></Modal>}
 
       {mobile && menuOpen && (
         <div style={{ position: "fixed", inset: 0, zIndex: 400 }}>
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} onClick={() => setMenuOpen(false)} />
-          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 260, background: WHITE, overflowY: "auto", paddingTop: 60 }}>
-            <NavContent />
-          </div>
+          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 260, background: WHITE, overflowY: "auto", paddingTop: 60 }}><NavContent /></div>
         </div>
       )}
 
@@ -981,11 +850,9 @@ function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClien
             {mobile && <button onClick={() => setMenuOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: TEXT, fontSize: 22 }}>☰</button>}
             <h2 style={{ fontSize: mobile ? 16 : 20, fontWeight: 900 }}>{TABS.find(t => t.id === tab)?.label}</h2>
           </div>
-          {!isSuperAdmin && !mobile && <button onClick={() => setChangePwModal(true)} style={{ ...S.btn(LIGHT_BLUE, BLUE), fontSize: 13, padding: "8px 16px" }}>🔒 Change Password</button>}
         </div>
 
         <div style={{ padding: mobile ? "12px 16px" : "24px 28px" }}>
-          {/* Stats */}
           <div style={{ display: "grid", gridTemplateColumns: mobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: mobile ? 10 : 14, marginBottom: mobile ? 16 : 28 }}>
             {[{ icon: "📋", label: "Bookings", value: bookings.length, color: BLUE, bg: LIGHT_BLUE }, { icon: "💰", label: "Revenue", value: fmt(revenue), color: GREEN, bg: LIGHT_GREEN }, { icon: "⏳", label: "Pending", value: bookings.filter(b => b.status === "Pending").length, color: "#e67e22", bg: "#fff8f0" }, { icon: "👥", label: "Clients", value: clients.length, color: BLUE, bg: LIGHT_BLUE }].map(({ icon, label, value, color, bg }) => (
               <div key={label} style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: mobile ? 14 : 20, display: "flex", alignItems: "center", gap: 12 }}>
@@ -995,54 +862,13 @@ function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClien
             ))}
           </div>
 
-          {/* MANAGE ADMINS */}
-          {tab === "admins" && isSuperAdmin && <>
-            <div style={{ background: `linear-gradient(135deg,${BLUE},#2196f3)`, borderRadius: 14, padding: "20px 24px", marginBottom: 20, color: WHITE }}>
-              <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.8, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>Super Admin Panel</div>
-              <div style={{ fontSize: 18, fontWeight: 800 }}>Manage Admin Accounts</div>
-              <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>Hidden from all other admins.</div>
-            </div>
-            <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#7a5c00", marginBottom: 16 }}>
-              ⚠️ After creating an admin, copy their details to <strong>HARDCODED_ADMINS</strong> in App.js so they can log in from any device — not just yours.
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-              <button style={{ ...S.btn(GREEN, WHITE), display: "flex", alignItems: "center", gap: 6 }} onClick={() => setInviteModal(true)}>+ Invite New Admin</button>
-            </div>
-            {allAdmins.length === 0 ? (
-              <div style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: "40px", textAlign: "center", color: MUTED }}>
-                <div style={{ fontSize: 48, marginBottom: 10 }}>👤</div>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>No admins yet</div>
-                <div style={{ fontSize: 13 }}>Click "Invite New Admin" to get started.</div>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {allAdmins.map(a => (
-                  <div key={a.id} style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: "16px 20px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                    <Avatar name={a.name} size={44} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 800, fontSize: 15 }}>{a.name}</div>
-                      <div style={{ fontSize: 13, color: MUTED }}>{a.email}</div>
-                      <span style={{ background: HARDCODED_ADMINS.find(h => h.id === a.id) ? LIGHT_GREEN : LIGHT_BLUE, color: HARDCODED_ADMINS.find(h => h.id === a.id) ? GREEN : BLUE, borderRadius: 50, padding: "2px 10px", fontSize: 11, fontWeight: 700, marginTop: 4, display: "inline-block" }}>
-                        {HARDCODED_ADMINS.find(h => h.id === a.id) ? "✅ Hardcoded (all devices)" : "⚠️ Session only (this device)"}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button onClick={() => { setResetPwModal(a); setResetPwForm({ newPw: "", confirm: "" }); }} style={{ ...S.btn(LIGHT_BLUE, BLUE), padding: "8px 14px", fontSize: 13 }}>🔒 Reset PW</button>
-                      <button onClick={() => delAdmin(a.id)} style={{ ...S.btn("#fdecea", "#e74c3c"), padding: "8px 14px", fontSize: 13 }}>🗑 Delete</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>}
-
           {/* BOOKINGS */}
           {tab === "bookings" && <>
             <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search bookings…" style={{ ...S.inp, flex: 1, minWidth: 150, padding: "10px 14px" }} />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search bookings…" style={{ ...S.inp, flex: 1, padding: "10px 14px" }} />
             </div>
             <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto", paddingBottom: 4 }}>
-              {["All", "Pending", "Confirmed", "Completed", "Cancelled"].map(s => { const a = filter === s; const col = SC[s] || BLUE; return <button key={s} onClick={() => setFilter(s)} style={{ background: a ? col : WHITE, color: a ? WHITE : MUTED, border: `1.5px solid ${a ? col : BORDER}`, borderRadius: 50, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>{s}</button>; })}
+              {["All","Pending","Confirmed","Completed","Cancelled"].map(s => { const a = filter === s; const col = SC[s] || BLUE; return <button key={s} onClick={() => setFilter(s)} style={{ background: a ? col : WHITE, color: a ? WHITE : MUTED, border: `1.5px solid ${a ? col : BORDER}`, borderRadius: 50, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>{s}</button>; })}
             </div>
             {filtBks.length === 0 && <div style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: 32, color: MUTED, textAlign: "center" }}>No bookings found.</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1063,7 +889,7 @@ function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClien
                     </div>
                     <div style={{ fontSize: 12, color: MUTED, marginBottom: 12 }}>{b.address}</div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {["Confirmed", "Completed", "Cancelled"].filter(s => s !== b.status).map(s => (
+                      {["Confirmed","Completed","Cancelled"].filter(s => s !== b.status).map(s => (
                         <button key={s} onClick={() => updBk(b.id, s)} style={{ background: STATUS_CONFIG[s]?.bg || BG, color: STATUS_CONFIG[s]?.color || MUTED, border: `1px solid ${STATUS_CONFIG[s]?.color || MUTED}33`, borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>→ {s}</button>
                       ))}
                       <button onClick={() => delBk(b.id)} style={{ background: "#fdecea", color: "#e74c3c", border: "1px solid #f5c6cb", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🗑 Del</button>
@@ -1077,7 +903,7 @@ function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClien
           {/* CLIENTS */}
           {tab === "clients" && <>
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-              <button style={S.btn(BLUE, WHITE)} onClick={() => setClientModal({ mode: "add", data: { name: "", email: "", phone: "", password: "" } })}>+ Add Client</button>
+              <button style={S.btn(BLUE, WHITE)} onClick={() => setClientModal({ mode: "add", data: {} })}>+ Add Client</button>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {clients.map(c => { const cbks = bookings.filter(b => b.clientId === c.id); return (
@@ -1091,7 +917,6 @@ function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClien
                     <div style={{ flex: 1, background: BG, borderRadius: 10, padding: 10, textAlign: "center" }}><div style={{ fontSize: 20, fontWeight: 900, color: GREEN }}>{fmt(cbks.reduce((s, b) => s + b.total, 0))}</div><div style={{ fontSize: 11, color: MUTED }}>Revenue</div></div>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => setClientModal({ mode: "edit", data: { ...c } })} style={{ ...S.btn(LIGHT_BLUE, BLUE), flex: 1, padding: "9px", fontSize: 13 }}>✏️ Edit</button>
                     <button onClick={() => delClient(c.id)} style={{ ...S.btn("#fdecea", "#e74c3c"), flex: 1, padding: "9px", fontSize: 13 }}>🗑 Delete</button>
                   </div>
                 </div>
@@ -1109,7 +934,7 @@ function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClien
                 <div key={svc.id} style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
                   <div style={{ background: `linear-gradient(135deg,${LIGHT_BLUE},${WHITE})`, padding: 18, borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", gap: 14 }}>
                     <div style={{ width: 48, height: 48, background: WHITE, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>{svc.icon}</div>
-                    <div><div style={{ fontWeight: 800, fontSize: 15 }}>{svc.name}</div><div style={{ color: GREEN, fontWeight: 800, fontSize: 17, marginTop: 2 }}>from {fmt(svc.base)}</div><span style={{ fontSize: 11, color: MUTED, background: BG, borderRadius: 50, padding: "2px 10px", border: `1px solid ${BORDER}` }}>{svc.hasRooms ? "Room-based" : "Flat rate"}</span></div>
+                    <div><div style={{ fontWeight: 800, fontSize: 15 }}>{svc.name}</div><div style={{ color: GREEN, fontWeight: 800, fontSize: 17, marginTop: 2 }}>from {fmt(svc.base)}</div></div>
                   </div>
                   <div style={{ padding: "12px 14px", display: "flex", gap: 8 }}>
                     <button onClick={() => setSvcModal({ mode: "edit", data: { ...svc } })} style={{ ...S.btn(LIGHT_BLUE, BLUE), flex: 1, padding: "9px", fontSize: 13 }}>✏️ Edit</button>
@@ -1154,9 +979,9 @@ function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClien
                     <div style={{ fontSize: 36 }}>🏷️</div>
                   </div>
                   <div style={{ padding: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                    <button onClick={() => setCoupons(p => p.map(x => x.code === c.code ? { ...x, active: !x.active } : x))} style={{ background: c.active ? LIGHT_GREEN : "#fdecea", color: c.active ? GREEN : "#e74c3c", border: `1px solid ${c.active ? GREEN + "33" : "#f5c6cb"}`, borderRadius: 50, padding: "6px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>{c.active ? "● Active" : "○ Inactive"}</button>
+                    <button onClick={() => toggleCoupon(c.code)} style={{ background: c.active ? LIGHT_GREEN : "#fdecea", color: c.active ? GREEN : "#e74c3c", border: "none", borderRadius: 50, padding: "6px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>{c.active ? "● Active" : "○ Inactive"}</button>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <button onClick={() => setCouponModal({ mode: "edit", data: { code: c.code, disc: c.disc, active: c.active, _edit: true, _orig: c.code } })} style={{ ...S.btn(LIGHT_BLUE, BLUE), padding: "7px 12px", fontSize: 12 }}>✏️ Edit</button>
+                      <button onClick={() => setCouponModal({ mode: "edit", data: { code: c.code, disc: c.disc, active: c.active, _edit: true, _orig: c.code } })} style={{ ...S.btn(LIGHT_BLUE, BLUE), padding: "7px 12px", fontSize: 12 }}>✏️</button>
                       <button onClick={() => delCoupon(c.code)} style={{ ...S.btn("#fdecea", "#e74c3c"), padding: "7px 10px", fontSize: 12 }}>🗑</button>
                     </div>
                   </div>
@@ -1166,7 +991,22 @@ function AdminDash({ admins, setAdmins, bookings, setBookings, clients, setClien
           </>}
 
           {/* DISCOUNTS */}
-          {tab === "discounts" && <DiscountsTab freqs={freqs} setFreqs={setFreqs} mobile={mobile} />}
+          {tab === "discounts" && (
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Frequency Discounts</div>
+              <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(auto-fill,minmax(260px,1fr))", gap: 12 }}>
+                {freqs.map(f => (
+                  <div key={f.id} style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: "18px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div><div style={{ fontWeight: 800, fontSize: 15 }}>{f.label}</div><div style={{ fontSize: 22, fontWeight: 900, color: f.disc > 0 ? GREEN : MUTED }}>{f.disc > 0 ? `${f.disc}% off` : "No discount"}</div></div>
+                    <div style={{ fontSize: 28 }}>{f.disc > 0 ? "💸" : "💰"}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: LIGHT_GREEN, borderRadius: 12, border: `1px solid ${GREEN}33`, padding: "16px 20px", marginTop: 20 }}>
+                <div style={{ fontWeight: 800, fontSize: 14, color: GREEN }}>💙 NDIS Cleaning — GST Free</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1181,7 +1021,7 @@ function LoginScreen({ clients, onLogin, onAdmin, onGuest }) {
   const [err, setErr] = useState("");
   function tryLogin() {
     const u = clients.find(c => c.email === email && c.password === pass);
-    if (u) onLogin(u); else setErr("Invalid credentials. Try sarah@example.com / pass123");
+    if (u) onLogin(u); else setErr("Invalid credentials.");
   }
   return (
     <div style={{ maxWidth: 420, margin: mobile ? "0 auto" : "56px auto", padding: 16 }}>
@@ -1198,7 +1038,6 @@ function LoginScreen({ clients, onLogin, onAdmin, onGuest }) {
         <button style={{ ...S.btn(WHITE, BLUE, BLUE), width: "100%", marginBottom: 16, padding: 14 }} onClick={onGuest}>Continue as Guest</button>
         <hr style={{ border: "none", borderTop: `1px solid ${BORDER}`, margin: "16px 0" }} />
         <button onClick={onAdmin} style={{ width: "100%", background: BG, color: MUTED, border: `1px solid ${BORDER}`, borderRadius: 9, padding: 12, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>🔐 Admin Login</button>
-        <p style={{ textAlign: "center", fontSize: 12, color: MUTED, marginTop: 14 }}>Demo: sarah@example.com / pass123</p>
       </div>
     </div>
   );
@@ -1209,26 +1048,16 @@ function AdminLogin({ onLogin, onBack }) {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [err, setErr] = useState("");
-
   function tryLogin() {
-    // Check super admin
     if (email.trim().toLowerCase() === SUPER_ADMIN.email.toLowerCase() && pass === SUPER_ADMIN.password) {
       const adminData = { id: "super", name: "Ron_admin", email: SUPER_ADMIN.email, role: "superadmin" };
       sessionStorage.setItem("adminUser", JSON.stringify(adminData));
       onLogin(adminData); return;
     }
-    // Check hardcoded + session admins
-    try {
-      const stored = sessionStorage.getItem("adminList");
-      const sessionAdmins = stored ? JSON.parse(stored) : [];
-      const merged = [...HARDCODED_ADMINS];
-      sessionAdmins.forEach(sa => { if (!merged.find(a => a.id === sa.id)) merged.push(sa); else { const i = merged.findIndex(a => a.id === sa.id); merged[i] = sa; } });
-      const found = merged.find(a => a.email.toLowerCase() === email.trim().toLowerCase() && a.password === pass);
-      if (found) { sessionStorage.setItem("adminUser", JSON.stringify(found)); onLogin(found); return; }
-    } catch (e) { }
+    const found = HARDCODED_ADMINS.find(a => a.email.toLowerCase() === email.trim().toLowerCase() && a.password === pass);
+    if (found) { sessionStorage.setItem("adminUser", JSON.stringify(found)); onLogin(found); return; }
     setErr("Invalid email or password.");
   }
-
   return (
     <div style={{ maxWidth: 380, margin: mobile ? "0 auto" : "56px auto", padding: 16 }}>
       <div style={{ background: WHITE, borderRadius: 18, border: `1px solid ${BORDER}`, padding: mobile ? "24px 20px" : 36, textAlign: "center", boxShadow: "0 8px 40px rgba(27,117,187,0.10)", marginTop: mobile ? 8 : 0 }}>
@@ -1248,26 +1077,76 @@ function AdminLogin({ onLogin, onBack }) {
 function PrivateRoute({ user, children }) { return user ? children : <Navigate to="/login" replace />; }
 function AdminRoute({ children }) {
   const adminUser = (() => { try { const a = sessionStorage.getItem("adminUser"); return a ? JSON.parse(a) : null; } catch (e) { return null; } })();
-  if (!adminUser) return <Navigate to="/admin-login" replace />;
-  return children;
+  return adminUser ? children : <Navigate to="/admin-login" replace />;
 }
+
+// ── DATA ICONS MAP (local services keep icons) ──
+const SVC_ICONS = { "House Cleaning": "🏠", "Commercial": "🏢", "End of Lease": "🔑", "NDIS Cleaning": "💙", "Office Cleaning": "💼", "Carpet Cleaning": "🧹", "Strata Cleaning": "🏘️", "Deep Clean": "✨" };
+const EXTRA_ICONS = { "Oven Cleaning": "🔥", "Fridge Cleaning": "❄️", "Interior Windows": "🪟", "Inside Cabinets": "🗄️", "Deep Clean": "✨", "Balcony Cleaning": "🌿", "Laundry": "👕", "Wall Washing": "🪣" };
 
 // ── ROOT ──
 export default function App() {
   const mobile = useIsMobile();
   const [user, setUser] = useState(() => { try { const u = sessionStorage.getItem("user"); return u ? JSON.parse(u) : null; } catch (e) { return null; } });
   const [adminUser, setAdminUser] = useState(() => { try { const a = sessionStorage.getItem("adminUser"); return a ? JSON.parse(a) : null; } catch (e) { return null; } });
-  const [admins, setAdmins] = useState(() => { try { const a = sessionStorage.getItem("adminList"); return a ? JSON.parse(a) : []; } catch (e) { return []; } });
-  const [freqs, setFreqs] = useState(() => { try { const f = sessionStorage.getItem("freqs"); return f ? JSON.parse(f) : DEF_FREQS; } catch (e) { return DEF_FREQS; } });
-  const [bookings, setBookings] = useState(DEF_BOOKINGS);
-  const [clients, setClients] = useState(DEF_CLIENTS);
-  const [services, setServices] = useState(DEF_SERVICES);
-  const [extras, setExtras] = useState(DEF_EXTRAS);
-  const [coupons, setCoupons] = useState(DEF_COUPONS);
   const isAdmin = !!adminUser;
 
-  useEffect(() => { sessionStorage.setItem("adminList", JSON.stringify(admins)); }, [admins]);
-  useEffect(() => { sessionStorage.setItem("freqs", JSON.stringify(freqs)); }, [freqs]);
+  // ── Data state ──
+  const [services, setServices] = useState([]);
+  const [extras, setExtras] = useState([]);
+  const [coupons, setCoupons] = useState([]);
+  const [freqs, setFreqs] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // ── Load all data from Supabase ──
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [svcRes, extRes, cpnRes, frqRes, bkRes, clRes] = await Promise.all([
+        supabase.from("services").select("*").eq("is_active", true).order("name"),
+        supabase.from("extras").select("*").eq("is_active", true).order("name"),
+        supabase.from("coupons").select("*").order("code"),
+        supabase.from("frequency_discounts").select("*").eq("is_active", true).order("discount_percent"),
+        supabase.from("bookings").select("*, client:clients(full_name,email,phone), service:services(name)").order("scheduled_date", { ascending: false }),
+        supabase.from("clients").select("*").order("full_name"),
+      ]);
+
+      if (svcRes.data) setServices(svcRes.data.map(s => ({ id: s.id, db_id: s.id, name: s.name, base: s.base_price, hasRooms: s.has_rooms, icon: SVC_ICONS[s.name] || "🧹" })));
+      if (extRes.data) setExtras(extRes.data.map(e => ({ id: e.id, db_id: e.id, name: e.name, price: e.price, icon: EXTRA_ICONS[e.name] || "✨" })));
+      if (cpnRes.data) setCoupons(cpnRes.data.map(c => ({ db_id: c.id, code: c.code, disc: c.discount_value, active: c.is_active, id: c.id })));
+      if (frqRes.data) setFreqs(frqRes.data.map(f => ({ id: f.frequency, label: f.label, disc: f.discount_percent })));
+      if (bkRes.data) setBookings(bkRes.data.map(b => ({
+        id: `YPC${b.id.slice(0, 6).toUpperCase()}`,
+        db_id: b.id,
+        clientId: b.client_id,
+        clientName: b.client?.full_name || "Guest",
+        clientEmail: b.client?.email || "",
+        service: b.service?.name || "—",
+        date: b.scheduled_date,
+        time: b.scheduled_time,
+        address: "",
+        total: b.total_price || 0,
+        status: b.status ? b.status.charAt(0).toUpperCase() + b.status.slice(1) : "Pending",
+        freq: b.frequency || "one_time",
+        extras: Array.isArray(b.extras) ? b.extras : [],
+      })));
+      if (clRes.data) setClients(clRes.data.map(c => ({ id: c.id, name: c.full_name, email: c.email, phone: c.phone || "", password: "" })));
+    } catch (err) {
+      console.error("Failed to load data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  if (loading) return (
+    <div style={{ fontFamily: "'Segoe UI',system-ui,sans-serif", background: BG, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <Loader text="Loading Yahweh Property Care…" />
+    </div>
+  );
 
   return (
     <BrowserRouter>
@@ -1281,22 +1160,20 @@ export default function App() {
               {!user && !isAdmin && <button style={S.btn(WHITE, BLUE, BLUE)} onClick={() => window.location.href = "/login"}>Login</button>}
               {user && !isAdmin && <button style={S.btn(WHITE, BLUE, BLUE)} onClick={() => { setUser(null); sessionStorage.removeItem("user"); window.location.href = "/login"; }}>Logout</button>}
               {isAdmin && <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ background: checkSuperAdmin(adminUser) ? `linear-gradient(135deg,${BLUE},#2196f3)` : LIGHT_BLUE, borderRadius: 8, padding: "6px 14px" }}>
-                  <span style={{ fontSize: 12, color: checkSuperAdmin(adminUser) ? WHITE : BLUE, fontWeight: 800 }}>{checkSuperAdmin(adminUser) ? "⭐ Super Admin" : "👤 Admin"}: {adminUser?.name}</span>
-                </div>
+                <div style={{ background: LIGHT_BLUE, borderRadius: 8, padding: "6px 14px" }}><span style={{ fontSize: 12, color: BLUE, fontWeight: 800 }}>👤 {adminUser?.name}</span></div>
                 <button style={S.btn(WHITE, BLUE, BLUE)} onClick={() => { setAdminUser(null); sessionStorage.removeItem("adminUser"); window.location.href = "/login"; }}>Logout</button>
               </div>}
             </>}
-            <a href="tel:1300925355" style={{ color: GREEN, fontWeight: 800, textDecoration: "none", fontSize: mobile ? 13 : 14, display: "flex", alignItems: "center", gap: 4 }}>📞{!mobile && " 1300 925 355"}</a>
+            <a href="tel:1300925355" style={{ color: GREEN, fontWeight: 800, textDecoration: "none", fontSize: mobile ? 13 : 14 }}>📞{!mobile && " 1300 925 355"}</a>
           </nav>
         </header>
 
         <Routes>
           <Route path="/login" element={<LoginScreen clients={clients} onLogin={u => { setUser(u); sessionStorage.setItem("user", JSON.stringify(u)); window.location.href = "/client"; }} onAdmin={() => window.location.href = "/admin-login"} onGuest={() => window.location.href = "/book"} />} />
           <Route path="/admin-login" element={<AdminLogin onLogin={u => { setAdminUser(u); window.location.href = "/admin"; }} onBack={() => window.location.href = "/login"} />} />
-          <Route path="/book" element={<BookingApp user={user} services={services} extras={extras} coupons={coupons} onComplete={nb => setBookings(p => [...p, nb])} />} />
+          <Route path="/book" element={<BookingApp user={user} services={services} extras={extras} coupons={coupons} freqs={freqs} onComplete={nb => setBookings(p => [...p, nb])} />} />
           <Route path="/client" element={<PrivateRoute user={user}><ClientDash user={user} bookings={bookings} onLogout={() => { setUser(null); sessionStorage.removeItem("user"); window.location.href = "/login"; }} onBook={() => window.location.href = "/book"} /></PrivateRoute>} />
-          <Route path="/admin" element={<AdminRoute><AdminDash admins={admins} setAdmins={setAdmins} bookings={bookings} setBookings={setBookings} clients={clients} setClients={setClients} services={services} setServices={setServices} extras={extras} setExtras={setExtras} coupons={coupons} setCoupons={setCoupons} freqs={freqs} setFreqs={setFreqs} onLogout={() => { setAdminUser(null); sessionStorage.removeItem("adminUser"); window.location.href = "/login"; }} /></AdminRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminDash bookings={bookings} setBookings={setBookings} clients={clients} setClients={setClients} services={services} setServices={setServices} extras={extras} setExtras={setExtras} coupons={coupons} setCoupons={setCoupons} freqs={freqs} setFreqs={setFreqs} onLogout={() => { setAdminUser(null); sessionStorage.removeItem("adminUser"); window.location.href = "/login"; }} /></AdminRoute>} />
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
