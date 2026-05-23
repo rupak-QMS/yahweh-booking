@@ -270,15 +270,18 @@ function BookingApp({ user, categories, onComplete }) {
   const gst = isNDIS ? 0 : Math.round(afterDisc * 0.10 * 100) / 100;
   const total = afterDisc + gst;
 
+  // Auto-update qty when visits change
   useEffect(() => {
-    if (!selCat) return;
-    supabase.from("items").select("*").eq("category_id", selCat.id).eq("is_active", true).order("sort_order")
-      .then(({ data }) => setCatItems(data || []));
-    supabase.from("addon_items").select("*").eq("category_id", selCat.id).eq("is_active", true).order("sort_order")
-      .then(({ data }) => setCatAddons(data || []));
-    setQuoteItems([{ id: uid(), item_id: "", name: "", unit_type: "", unit_price: 0, qty: 1 }]);
-    setQuoteAddons([]);
-  }, [selCat]);
+    if (!visits) return;
+    setQuoteItems(p => p.map(it => ({
+      ...it,
+      qty: it.item_id ? (catItems.find(c => c.id === it.item_id)?.default_quantity || 1) : it.qty
+    })));
+    setQuoteAddons(p => p.map(a => ({
+      ...a,
+      qty: a.addon_id ? (catAddons.find(c => c.id === a.addon_id)?.default_quantity || 1) : a.qty
+    })));
+  }, [visits]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateItem(idx, field, val) {
     setQuoteItems(p => p.map((it, i) => {
