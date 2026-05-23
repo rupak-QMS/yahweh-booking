@@ -247,6 +247,8 @@ function BookingApp({ user, categories, onComplete }) {
   });
 
   const [confirmedBooking, setConfirmedBooking] = useState(null);
+  const [viewYear, setViewYear] = useState(new Date().getFullYear());
+  const [viewMonth, setViewMonth] = useState(new Date().getMonth());
 
   const visits = getVisits(freqId, period);
   const isNDIS = selCat?.name?.includes("NDIS");
@@ -655,15 +657,76 @@ function BookingApp({ user, categories, onComplete }) {
 
               {/* Date */}
               <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>📅 Start Date</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: mobile ? 4 : 6, marginBottom: 20 }}>
-                {DAYS.map(d => <div key={d} style={{ textAlign: "center", fontSize: 10, color: MUTED, fontWeight: 800, padding: "3px 0" }}>{d}</div>)}
-                {dates.map((d, i) => { const a = date && d.toDateString() === date.toDateString(); const past = d < today && d.toDateString() !== today.toDateString(); return (
-                  <div key={i} onClick={() => !past && setDate(d)} style={{ border: `2px solid ${a ? BLUE : BORDER}`, borderRadius: 8, padding: mobile ? "6px 2px" : "8px 4px", textAlign: "center", cursor: past ? "not-allowed" : "pointer", background: a ? BLUE : past ? "#f8f8f8" : WHITE, opacity: past ? 0.4 : 1 }}>
-                    <div style={{ fontSize: mobile ? 9 : 10, color: a ? "rgba(255,255,255,0.85)" : MUTED, fontWeight: 700 }}>{d.toLocaleString("default", { month: "short" })}</div>
-                    <div style={{ fontSize: mobile ? 14 : 18, fontWeight: 900, color: a ? WHITE : past ? "#ccc" : TEXT, lineHeight: 1.1 }}>{d.getDate()}</div>
-                  </div>
-                );})}
-              </div>
+
+              {/* Month selector */}
+              {(() => {
+                const today2 = new Date();
+                const months = Array.from({ length: 12 }, (_, i) => {
+                  const d = new Date(today2.getFullYear(), today2.getMonth() + i, 1);
+                  return { label: d.toLocaleString("default", { month: "long", year: "numeric" }), year: d.getFullYear(), month: d.getMonth() };
+                });
+                const selMonth = date ? { year: date.getFullYear(), month: date.getMonth() } : { year: today2.getFullYear(), month: today2.getMonth() };
+                const [viewYear, setViewYear] = useState(selMonth.year);
+                const [viewMonth, setViewMonth] = useState(selMonth.month);
+
+                const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+                const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+                const allDays = Array.from({ length: firstDay }, () => null).concat(
+                  Array.from({ length: daysInMonth }, (_, i) => new Date(viewYear, viewMonth, i + 1))
+                );
+
+                return (
+                  <>
+                    {/* Month navigation */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, background: LIGHT_BLUE, borderRadius: 10, padding: "10px 14px" }}>
+                      <button onClick={() => {
+                        const prev = new Date(viewYear, viewMonth - 1, 1);
+                        if (prev >= new Date(today2.getFullYear(), today2.getMonth(), 1)) { setViewMonth(prev.getMonth()); setViewYear(prev.getFullYear()); }
+                      }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: BLUE, fontWeight: 900 }}>‹</button>
+                      <div style={{ fontWeight: 800, fontSize: 15, color: BLUE }}>
+                        {new Date(viewYear, viewMonth, 1).toLocaleString("default", { month: "long", year: "numeric" })}
+                      </div>
+                      <button onClick={() => {
+                        const next = new Date(viewYear, viewMonth + 1, 1);
+                        const maxMonth = new Date(today2.getFullYear(), today2.getMonth() + 11, 1);
+                        if (next <= maxMonth) { setViewMonth(next.getMonth()); setViewYear(next.getFullYear()); }
+                      }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: BLUE, fontWeight: 900 }}>›</button>
+                    </div>
+
+                    {/* Quick month pills */}
+                    <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, marginBottom: 12 }}>
+                      {months.slice(0, 6).map(m => {
+                        const active = m.year === viewYear && m.month === viewMonth;
+                        return (
+                          <div key={m.label} onClick={() => { setViewMonth(m.month); setViewYear(m.year); }} style={{ border: `2px solid ${active ? BLUE : BORDER}`, borderRadius: 50, padding: "5px 14px", cursor: "pointer", background: active ? BLUE : WHITE, color: active ? WHITE : MUTED, fontWeight: 700, fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}>
+                            {new Date(m.year, m.month, 1).toLocaleString("default", { month: "short" })} {m.year !== today2.getFullYear() ? m.year : ""}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Day headers */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: mobile ? 4 : 6, marginBottom: 4 }}>
+                      {DAYS.map(d => <div key={d} style={{ textAlign: "center", fontSize: 10, color: MUTED, fontWeight: 800, padding: "3px 0" }}>{d}</div>)}
+                    </div>
+
+                    {/* Calendar grid */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: mobile ? 4 : 6, marginBottom: 20 }}>
+                      {allDays.map((d, i) => {
+                        if (!d) return <div key={i} />;
+                        const a = date && d.toDateString() === date.toDateString();
+                        const past = d < new Date(today2.getFullYear(), today2.getMonth(), today2.getDate());
+                        return (
+                          <div key={i} onClick={() => !past && setDate(d)} style={{ border: `2px solid ${a ? BLUE : BORDER}`, borderRadius: 8, padding: mobile ? "6px 2px" : "8px 4px", textAlign: "center", cursor: past ? "not-allowed" : "pointer", background: a ? BLUE : past ? "#f8f8f8" : WHITE, opacity: past ? 0.35 : 1 }}>
+                            <div style={{ fontSize: mobile ? 9 : 10, color: a ? "rgba(255,255,255,0.85)" : MUTED, fontWeight: 700 }}>{d.toLocaleString("default", { month: "short" })}</div>
+                            <div style={{ fontSize: mobile ? 13 : 16, fontWeight: 900, color: a ? WHITE : past ? "#ccc" : TEXT, lineHeight: 1.2 }}>{d.getDate()}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
 
               {/* Time */}
               <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>🕐 Start Time</div>
