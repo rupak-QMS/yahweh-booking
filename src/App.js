@@ -46,6 +46,8 @@ const UNIT_TYPES = [
 ];
 
 const CAT_ICONS = ["🏠","💙","🏢","🏭","🧹","✨","🔑","🌿","💼","🏘️"];
+const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const TIME_SLOTS = ["7:00 AM","8:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","2:00 PM","3:00 PM"];
 
 const SUPER_ADMIN = { id: "super", name: "Ron_admin", email: "ron.web108@gmail.com", password: "Ron@!two3@#", role: "superadmin" };
 const HARDCODED_ADMINS = [
@@ -58,9 +60,6 @@ const STATUS_CONFIG = {
   Completed: { color: GREEN,     bg: LIGHT_GREEN },
   Cancelled: { color: "#e74c3c", bg: "#fdecea" },
 };
-
-const TIME_SLOTS = ["7:00 AM","8:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","2:00 PM","3:00 PM"];
-const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
 const S = {
   panel: m => ({ background: WHITE, borderRadius: m ? 12 : 16, border: `1px solid ${BORDER}`, padding: m ? 16 : "28px 32px", marginBottom: m ? 12 : 20, boxShadow: "0 2px 12px rgba(27,117,187,0.06)" }),
@@ -217,18 +216,22 @@ function QuoteSidebar({ items, addons, couponPct, isNDIS, onApplyCoupon }) {
 // ── BOOKING APP ──
 function BookingApp({ user, categories, onComplete }) {
   const mobile = useIsMobile();
+  const today = new Date();
+
+  // Steps
   const [step, setStep] = useState(1);
   const [maxStep, setMaxStep] = useState(1);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [confirmedBooking, setConfirmedBooking] = useState(null);
 
-  // Category & items state (prefixed to avoid conflicts)
+  // Category & items
   const [selCat, setSelCat] = useState(null);
-  const [bkItems, setBkItems] = useState([]);   // items for selected category
-  const [bkAddons, setBkAddons] = useState([]); // addons for selected category
+  const [bkItems, setBkItems] = useState([]);
+  const [bkAddons, setBkAddons] = useState([]);
 
-  // Quote state
+  // Quote
   const [freqId, setFreqId] = useState("");
   const [period, setPeriod] = useState(1);
   const [quoteItems, setQuoteItems] = useState([{ id: uid(), item_id: "", name: "", unit_type: "", unit_price: 0, qty: 1, defQty: 1 }]);
@@ -236,22 +239,30 @@ function BookingApp({ user, categories, onComplete }) {
   const [couponPct, setCouponPct] = useState(0);
   const [couponId, setCouponId] = useState(null);
 
-  // Schedule & client
+  // Calendar
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [date, setDate] = useState(null);
   const [time, setTime] = useState("9:00 AM");
+
+  // Client details
   const [client, setClient] = useState({
-    firstName: user?.name?.split(" ")[0] || "", lastName: user?.name?.split(" ").slice(1).join(" ") || "",
+    firstName: user?.name?.split(" ")[0] || "",
+    lastName: user?.name?.split(" ").slice(1).join(" ") || "",
     email: user?.email || "", phone: user?.phone || "",
     address: "", suburb: "", state: "NSW", postcode: "", notes: "",
     cardName: "", cardNum: "", cardExp: "", cardCvv: "",
   });
 
-  const [confirmedBooking, setConfirmedBooking] = useState(null);
-  const [viewYear, setViewYear] = useState(new Date().getFullYear());
-  const [viewMonth, setViewMonth] = useState(new Date().getMonth());
-
   const visits = getVisits(freqId, period);
   const isNDIS = selCat?.name?.includes("NDIS");
+  const itemsTotal = quoteItems.reduce((s, i) => s + Number(i.unit_price) * Number(i.qty), 0);
+  const addonsTotal = quoteAddons.reduce((s, a) => s + Number(a.unit_price) * Number(a.qty), 0);
+  const subtotal = itemsTotal + addonsTotal;
+  const couponDisc = couponPct > 0 ? Math.round(subtotal * couponPct / 100) : 0;
+  const afterDisc = subtotal - couponDisc;
+  const gst = isNDIS ? 0 : Math.round(afterDisc * 0.10 * 100) / 100;
+  const total = afterDisc + gst;
 
   // Load items when category selected
   useEffect(() => {
@@ -269,16 +280,7 @@ function BookingApp({ user, categories, onComplete }) {
     if (!visits) return;
     setQuoteItems(p => p.map(it => it.item_id && it.defQty ? { ...it, qty: it.defQty * visits } : it));
     setQuoteAddons(p => p.map(a => a.addon_id && a.defQty ? { ...a, qty: a.defQty * visits } : a));
-  }, [visits]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Price calc
-  const itemsTotal = quoteItems.reduce((s, i) => s + Number(i.unit_price) * Number(i.qty), 0);
-  const addonsTotal = quoteAddons.reduce((s, a) => s + Number(a.unit_price) * Number(a.qty), 0);
-  const subtotal = itemsTotal + addonsTotal;
-  const couponDisc = couponPct > 0 ? Math.round(subtotal * couponPct / 100) : 0;
-  const afterDisc = subtotal - couponDisc;
-  const gst = isNDIS ? 0 : Math.round(afterDisc * 0.10 * 100) / 100;
-  const total = afterDisc + gst;
+  }, [visits]); // eslint-disable-line
 
   function updateItem(idx, field, val) {
     setQuoteItems(p => p.map((it, i) => {
@@ -310,8 +312,22 @@ function BookingApp({ user, categories, onComplete }) {
   function removeItem(idx) { setQuoteItems(p => p.filter((_, i) => i !== idx)); }
   function addAddon() { setQuoteAddons(p => [...p, { id: uid(), addon_id: "", name: "", unit_type: "", unit_price: 0, qty: 1, defQty: 1 }]); }
   function removeAddon(idx) { setQuoteAddons(p => p.filter((_, i) => i !== idx)); }
-
   const setC = k => e => setClient(p => ({ ...p, [k]: e.target.value }));
+
+  // Calendar helpers
+  const calFirstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const calDaysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const minMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const maxMonth = new Date(today.getFullYear(), today.getMonth() + 11, 1);
+
+  function prevMonth() {
+    const prev = new Date(viewYear, viewMonth - 1, 1);
+    if (prev >= minMonth) { setViewMonth(prev.getMonth()); setViewYear(prev.getFullYear()); }
+  }
+  function nextMonth() {
+    const next = new Date(viewYear, viewMonth + 1, 1);
+    if (next <= maxMonth) { setViewMonth(next.getMonth()); setViewYear(next.getFullYear()); }
+  }
 
   const STEPS = ["Category", "Quote", "Schedule", "Details", "Payment", "Confirm"];
   const VALS = [
@@ -344,16 +360,12 @@ function BookingApp({ user, categories, onComplete }) {
 
       const firstItem = quoteItems.find(i => i.item_id);
       const { data: bkData, error: bErr } = await supabase.from("bookings").insert({
-        client_id: clientData.id,
-        category_id: selCat?.id,
+        client_id: clientData.id, category_id: selCat?.id,
         item_id: firstItem?.item_id || null,
         addon_item_ids: quoteAddons.filter(a => a.addon_id).map(a => a.addon_id),
-        coupon_id: couponId,
-        frequency: freqId,
+        coupon_id: couponId, frequency: freqId,
         scheduled_date: date.toISOString().split("T")[0],
-        scheduled_time: time,
-        quantity: visits,
-        status: "pending",
+        scheduled_time: time, quantity: visits, status: "pending",
         subtotal, discount_amount: couponDisc, total_price: total, notes: client.notes,
       }).select().single();
       if (bErr) throw bErr;
@@ -381,76 +393,39 @@ function BookingApp({ user, categories, onComplete }) {
     } finally { setSubmitting(false); }
   }
 
-  const today = new Date();
-  const dates = Array.from({ length: 21 }, (_, i) => { const d = new Date(today); d.setDate(today.getDate() + i); return d; });
-
+  // ── CONFIRMATION SCREEN ──
   if (done && confirmedBooking) return (
-    <div style={{ maxWidth: 580, margin: "48px auto", padding: 16, paddingBottom: mobile ? 90 : 16 }}>
-      <div style={{ ...S.panel(mobile), padding: "36px 32px" }}>
+    <div style={{ maxWidth: 580, margin: "32px auto", padding: 16, paddingBottom: mobile ? 90 : 16 }}>
+      <div style={{ ...S.panel(mobile), padding: mobile ? "24px 16px" : "36px 32px" }}>
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ width: 72, height: 72, background: LIGHT_GREEN, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 36 }}>✅</div>
           <h2 style={{ fontSize: 26, fontWeight: 900, color: GREEN, marginBottom: 8 }}>Booking Confirmed!</h2>
           <p style={{ color: MUTED, fontSize: 14 }}>Confirmation sent to <strong style={{ color: BLUE }}>{client.email}</strong></p>
         </div>
-
-        {/* Booking ID */}
         <div style={{ background: LIGHT_BLUE, borderRadius: 10, padding: "12px 16px", textAlign: "center", marginBottom: 20 }}>
           <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Booking ID</div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: BLUE }}>{confirmedBooking.id}</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: BLUE }}>{confirmedBooking.id}</div>
         </div>
-
-        {/* Booking Details */}
-        <div style={{ background: BG, borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Service Details</div>
-          {[
-            ["Service", confirmedBooking.service],
-            ["Category", selCat?.name],
-            ["Frequency", FREQUENCIES.find(f => f.id === freqId)?.label || freqId],
-            ["Period", `${period} month${period > 1 ? "s" : ""}`],
-            ["Total Visits", `${visits} visits`],
-            ["Start Date", date?.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })],
-            ["Start Time", time],
-          ].map(([k, v]) => (
-            <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 14 }}>
-              <span style={{ color: MUTED }}>{k}</span>
-              <span style={{ fontWeight: 600, textAlign: "right", maxWidth: "60%" }}>{v}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Address */}
-        <div style={{ background: BG, borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Location</div>
-          <div style={{ fontSize: 14, color: TEXT }}>{confirmedBooking.address}</div>
-        </div>
-
-        {/* Pricing */}
-        <div style={{ background: BG, borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Pricing</div>
-          {[
-            ["Subtotal", fmt(subtotal)],
-            ...(couponDisc > 0 ? [["Discount", `-${fmt(couponDisc)}`]] : []),
-            ["GST", isNDIS ? "GST Free" : fmt(gst)],
-          ].map(([k, v]) => (
-            <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 14 }}>
-              <span style={{ color: MUTED }}>{k}</span>
-              <span style={{ fontWeight: 600 }}>{v}</span>
-            </div>
-          ))}
-          <hr style={{ border: "none", borderTop: `1px dashed ${BORDER}`, margin: "10px 0" }} />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontWeight: 800, fontSize: 15 }}>Total (AUD)</span>
-            <span style={{ fontWeight: 900, fontSize: 22, color: BLUE }}>{fmt(total)}</span>
+        {[
+          { title: "Service", rows: [["Category", selCat?.name], ["Service", confirmedBooking.service], ["Frequency", FREQUENCIES.find(f => f.id === freqId)?.label || freqId], ["Period", `${period} month${period > 1 ? "s" : ""}`], ["Total Visits", `${visits} visits`]] },
+          { title: "Schedule", rows: [["Start Date", date?.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })], ["Start Time", time]] },
+          { title: "Location", rows: [["Name", confirmedBooking.clientName], ["Address", confirmedBooking.address], ["Phone", client.phone]] },
+          { title: "Pricing", rows: [["Subtotal", fmt(subtotal)], ...(couponDisc > 0 ? [["Discount", `-${fmt(couponDisc)}`]] : []), ["GST", isNDIS ? "GST Free" : fmt(gst)], ["Total (AUD)", fmt(total)]] },
+        ].map(sec => (
+          <div key={sec.title} style={{ background: BG, borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>{sec.title}</div>
+            {sec.rows.map(([k, v]) => <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 7, fontSize: 14 }}><span style={{ color: MUTED }}>{k}</span><span style={{ fontWeight: 600, textAlign: "right", maxWidth: "60%" }}>{v}</span></div>)}
           </div>
-        </div>
-
+        ))}
         <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#7a5c00", marginBottom: 20 }}>
           ⏰ Our team will call <strong>{client.phone}</strong> within 2 hours to confirm your appointment.
         </div>
-
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <button style={{ ...S.btn(WHITE, BLUE, BLUE), padding: 14, fontSize: 13 }} onClick={() => { setDone(false); setStep(1); setMaxStep(1); setConfirmedBooking(null); }}>+ New Booking</button>
-          <button style={{ ...S.btn(BLUE, WHITE), padding: 14, fontSize: 13 }} onClick={() => window.location.href = user ? "/client" : `/book?ref=${confirmedBooking.id}`}>View Booking</button>
+          <button style={{ ...S.btn(WHITE, BLUE, BLUE), padding: 14 }} onClick={() => { setDone(false); setStep(1); setMaxStep(1); setConfirmedBooking(null); }}>+ New Booking</button>
+          {user
+            ? <button style={{ ...S.btn(BLUE, WHITE), padding: 14 }} onClick={() => window.location.href = "/client"}>My Bookings</button>
+            : <button style={{ ...S.btn(BLUE, WHITE), padding: 14 }} onClick={() => window.location.href = "/login"}>Login to View</button>
+          }
         </div>
       </div>
     </div>
@@ -494,7 +469,6 @@ function BookingApp({ user, categories, onComplete }) {
           {/* STEP 2: Quote Builder */}
           {step === 2 && (
             <>
-              {/* Schedule */}
               <div style={S.panel(mobile)}>
                 <div style={S.secTitle(mobile)}>Service Schedule</div>
                 <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
@@ -529,7 +503,7 @@ function BookingApp({ user, categories, onComplete }) {
                 </div>
                 {!mobile && (
                   <div style={{ display: "grid", gridTemplateColumns: "3fr 120px 120px 130px 100px", gap: 8, marginBottom: 8, padding: "0 14px" }}>
-                    {["Item / Service", "Unit Type", "Qty", "Unit Price ($)", "Amount"].map(h => (
+                    {["Item / Service","Unit Type","Qty","Unit Price ($)","Amount"].map(h => (
                       <div key={h} style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1 }}>{h}</div>
                     ))}
                   </div>
@@ -628,19 +602,19 @@ function BookingApp({ user, categories, onComplete }) {
             <div style={S.panel(mobile)}>
               <div style={S.secTitle(mobile)}>Choose Start Date & Time</div>
 
-              {/* Period & Frequency reminder */}
+              {/* Frequency & Period */}
               <div style={{ background: LIGHT_BLUE, borderRadius: 12, padding: "14px 18px", marginBottom: 20 }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>📅 Service Period & Frequency</div>
                 <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr 1fr", gap: 12 }}>
                   <div>
-                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 6 }}>Service Frequency *</div>
+                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 6 }}>Frequency</div>
                     <select value={freqId} onChange={e => setFreqId(e.target.value)} style={S.inp}>
-                      <option value="">Select frequency…</option>
+                      <option value="">Select…</option>
                       {FREQUENCIES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
                     </select>
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 6 }}>Service Period *</div>
+                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 6 }}>Period</div>
                     <select value={period} onChange={e => setPeriod(Number(e.target.value))} style={S.inp}>
                       {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                     </select>
@@ -655,78 +629,49 @@ function BookingApp({ user, categories, onComplete }) {
                 </div>
               </div>
 
-              {/* Date */}
-              <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>📅 Start Date</div>
+              {/* Month navigation */}
+              <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>📅 Starting Month & Date</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, background: LIGHT_BLUE, borderRadius: 10, padding: "10px 16px" }}>
+                <button onClick={prevMonth} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: BLUE, fontWeight: 900, lineHeight: 1, padding: "0 8px" }}>‹</button>
+                <div style={{ fontWeight: 900, fontSize: 16, color: BLUE }}>
+                  {new Date(viewYear, viewMonth, 1).toLocaleString("default", { month: "long", year: "numeric" })}
+                </div>
+                <button onClick={nextMonth} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: BLUE, fontWeight: 900, lineHeight: 1, padding: "0 8px" }}>›</button>
+              </div>
 
-              {/* Month selector */}
-              {(() => {
-                const today2 = new Date();
-                const months = Array.from({ length: 12 }, (_, i) => {
-                  const d = new Date(today2.getFullYear(), today2.getMonth() + i, 1);
-                  return { label: d.toLocaleString("default", { month: "long", year: "numeric" }), year: d.getFullYear(), month: d.getMonth() };
-                });
-                const selMonth = date ? { year: date.getFullYear(), month: date.getMonth() } : { year: today2.getFullYear(), month: today2.getMonth() };
-                const [viewYear, setViewYear] = useState(selMonth.year);
-                const [viewMonth, setViewMonth] = useState(selMonth.month);
-
-                const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-                const firstDay = new Date(viewYear, viewMonth, 1).getDay();
-                const allDays = Array.from({ length: firstDay }, () => null).concat(
-                  Array.from({ length: daysInMonth }, (_, i) => new Date(viewYear, viewMonth, i + 1))
-                );
-
-                return (
-                  <>
-                    {/* Month navigation */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, background: LIGHT_BLUE, borderRadius: 10, padding: "10px 14px" }}>
-                      <button onClick={() => {
-                        const prev = new Date(viewYear, viewMonth - 1, 1);
-                        if (prev >= new Date(today2.getFullYear(), today2.getMonth(), 1)) { setViewMonth(prev.getMonth()); setViewYear(prev.getFullYear()); }
-                      }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: BLUE, fontWeight: 900 }}>‹</button>
-                      <div style={{ fontWeight: 800, fontSize: 15, color: BLUE }}>
-                        {new Date(viewYear, viewMonth, 1).toLocaleString("default", { month: "long", year: "numeric" })}
-                      </div>
-                      <button onClick={() => {
-                        const next = new Date(viewYear, viewMonth + 1, 1);
-                        const maxMonth = new Date(today2.getFullYear(), today2.getMonth() + 11, 1);
-                        if (next <= maxMonth) { setViewMonth(next.getMonth()); setViewYear(next.getFullYear()); }
-                      }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: BLUE, fontWeight: 900 }}>›</button>
+              {/* Month pills */}
+              <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, marginBottom: 14 }}>
+                {Array.from({ length: 6 }, (_, i) => {
+                  const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+                  const active = d.getMonth() === viewMonth && d.getFullYear() === viewYear;
+                  return (
+                    <div key={i} onClick={() => { setViewMonth(d.getMonth()); setViewYear(d.getFullYear()); }} style={{ border: `2px solid ${active ? BLUE : BORDER}`, borderRadius: 50, padding: "5px 14px", cursor: "pointer", background: active ? BLUE : WHITE, color: active ? WHITE : MUTED, fontWeight: 700, fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}>
+                      {d.toLocaleString("default", { month: "short" })}{d.getFullYear() !== today.getFullYear() ? ` ${d.getFullYear()}` : ""}
                     </div>
+                  );
+                })}
+              </div>
 
-                    {/* Quick month pills */}
-                    <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, marginBottom: 12 }}>
-                      {months.slice(0, 6).map(m => {
-                        const active = m.year === viewYear && m.month === viewMonth;
-                        return (
-                          <div key={m.label} onClick={() => { setViewMonth(m.month); setViewYear(m.year); }} style={{ border: `2px solid ${active ? BLUE : BORDER}`, borderRadius: 50, padding: "5px 14px", cursor: "pointer", background: active ? BLUE : WHITE, color: active ? WHITE : MUTED, fontWeight: 700, fontSize: 12, whiteSpace: "nowrap", flexShrink: 0 }}>
-                            {new Date(m.year, m.month, 1).toLocaleString("default", { month: "short" })} {m.year !== today2.getFullYear() ? m.year : ""}
-                          </div>
-                        );
-                      })}
-                    </div>
+              {/* Day headers */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: mobile ? 4 : 6, marginBottom: 4 }}>
+                {DAYS.map(d => <div key={d} style={{ textAlign: "center", fontSize: 10, color: MUTED, fontWeight: 800, padding: "3px 0" }}>{d}</div>)}
+              </div>
 
-                    {/* Day headers */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: mobile ? 4 : 6, marginBottom: 4 }}>
-                      {DAYS.map(d => <div key={d} style={{ textAlign: "center", fontSize: 10, color: MUTED, fontWeight: 800, padding: "3px 0" }}>{d}</div>)}
+              {/* Calendar grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: mobile ? 4 : 6, marginBottom: 20 }}>
+                {Array.from({ length: calFirstDay }, (_, i) => <div key={`b${i}`} />)}
+                {Array.from({ length: calDaysInMonth }, (_, i) => {
+                  const d = new Date(viewYear, viewMonth, i + 1);
+                  const a = date && d.toDateString() === date.toDateString();
+                  const past = d < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                  return (
+                    <div key={i} onClick={() => !past && setDate(d)} style={{ border: `2px solid ${a ? BLUE : BORDER}`, borderRadius: 8, padding: mobile ? "6px 2px" : "8px 4px", textAlign: "center", cursor: past ? "not-allowed" : "pointer", background: a ? BLUE : past ? "#f8f8f8" : WHITE, opacity: past ? 0.35 : 1 }}>
+                      <div style={{ fontSize: mobile ? 9 : 10, color: a ? "rgba(255,255,255,0.85)" : MUTED, fontWeight: 700 }}>{d.toLocaleString("default", { month: "short" })}</div>
+                      <div style={{ fontSize: mobile ? 13 : 16, fontWeight: 900, color: a ? WHITE : past ? "#ccc" : TEXT, lineHeight: 1.2 }}>{d.getDate()}</div>
                     </div>
-
-                    {/* Calendar grid */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: mobile ? 4 : 6, marginBottom: 20 }}>
-                      {allDays.map((d, i) => {
-                        if (!d) return <div key={i} />;
-                        const a = date && d.toDateString() === date.toDateString();
-                        const past = d < new Date(today2.getFullYear(), today2.getMonth(), today2.getDate());
-                        return (
-                          <div key={i} onClick={() => !past && setDate(d)} style={{ border: `2px solid ${a ? BLUE : BORDER}`, borderRadius: 8, padding: mobile ? "6px 2px" : "8px 4px", textAlign: "center", cursor: past ? "not-allowed" : "pointer", background: a ? BLUE : past ? "#f8f8f8" : WHITE, opacity: past ? 0.35 : 1 }}>
-                            <div style={{ fontSize: mobile ? 9 : 10, color: a ? "rgba(255,255,255,0.85)" : MUTED, fontWeight: 700 }}>{d.toLocaleString("default", { month: "short" })}</div>
-                            <div style={{ fontSize: mobile ? 13 : 16, fontWeight: 900, color: a ? WHITE : past ? "#ccc" : TEXT, lineHeight: 1.2 }}>{d.getDate()}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                );
-              })()}
+                  );
+                })}
+              </div>
 
               {/* Time */}
               <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>🕐 Start Time</div>
@@ -734,7 +679,7 @@ function BookingApp({ user, categories, onComplete }) {
                 {TIME_SLOTS.map(t => { const a = time === t; return <div key={t} onClick={() => setTime(t)} style={{ border: `2px solid ${a ? BLUE : BORDER}`, borderRadius: 10, padding: mobile ? "11px 6px" : 12, textAlign: "center", cursor: "pointer", background: a ? BLUE : WHITE, color: a ? WHITE : MUTED, fontWeight: a ? 800 : 500, fontSize: mobile ? 12 : 13 }}>{t}</div>; })}
               </div>
 
-              {/* Confirmation */}
+              {/* Summary */}
               {date && (
                 <div style={{ marginTop: 16, background: LIGHT_GREEN, border: `1px solid ${GREEN}44`, borderRadius: 12, padding: "14px 18px" }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: GREEN, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>✅ Schedule Confirmed</div>
@@ -811,7 +756,7 @@ function BookingApp({ user, categories, onComplete }) {
             </div>
           )}
 
-          {/* Nav buttons */}
+          {/* Nav */}
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, paddingBottom: mobile ? 80 : 0 }}>
             {step > 1 ? <button style={S.btn(WHITE, BLUE, BLUE)} onClick={() => { setStep(s => s - 1); window.scrollTo(0, 0); }}>← Back</button> : <span />}
             {step < 6
@@ -820,15 +765,8 @@ function BookingApp({ user, categories, onComplete }) {
           </div>
         </div>
 
-        {/* Sidebar */}
         {!mobile && (
-          <QuoteSidebar
-            items={quoteItems}
-            addons={quoteAddons}
-            couponPct={couponPct}
-            isNDIS={isNDIS}
-            onApplyCoupon={(pct, id) => { setCouponPct(pct); setCouponId(id); }}
-          />
+          <QuoteSidebar items={quoteItems} addons={quoteAddons} couponPct={couponPct} isNDIS={isNDIS} onApplyCoupon={(pct, id) => { setCouponPct(pct); setCouponId(id); }} />
         )}
       </div>
     </div>
@@ -861,7 +799,6 @@ function ClientDash({ user, bookings, onLogout, onBook }) {
           </div>
         </div>
       </div>
-
       <div style={{ maxWidth: 900, margin: mobile ? "-40px 16px 0" : "-44px auto 0", position: "relative", zIndex: 2 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: mobile ? 10 : 16 }}>
           {[{ icon: "📋", label: "Total", value: mine.length, color: BLUE }, { icon: "✅", label: "Completed", value: past.filter(b => b.status === "Completed").length, color: GREEN }, { icon: "💰", label: "Spent", value: fmt(totalSpent), color: "#9b59b6" }].map(({ icon, label, value, color }) => (
@@ -873,7 +810,6 @@ function ClientDash({ user, bookings, onLogout, onBook }) {
           ))}
         </div>
       </div>
-
       <div style={{ maxWidth: 900, margin: "0 auto", padding: mobile ? "16px" : "24px 0 0" }}>
         <div style={{ display: "flex", gap: 4, marginBottom: 16, background: WHITE, borderRadius: 12, padding: 6, border: `1px solid ${BORDER}` }}>
           {[["upcoming",`Upcoming (${upcoming.length})`],["past",`History (${past.length})`]].map(([id, label]) => (
@@ -919,14 +855,12 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
   const [confirm, setConfirm] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Super Admin
   const [admins, setAdmins] = useState(() => { try { return JSON.parse(sessionStorage.getItem("adminList") || "[]"); } catch { return []; } });
   const [inviteModal, setInviteModal] = useState(false);
   const [inviteForm, setInviteForm] = useState({ name: "", email: "", password: "" });
   const [resetModal, setResetModal] = useState(null);
   const [resetForm, setResetForm] = useState({ newPw: "", confirm: "" });
 
-  // Categories/Items/Addons
   const [catModal, setCatModal] = useState(null);
   const [selCat, setSelCat] = useState(null);
   const [adminItems, setAdminItems] = useState([]);
@@ -934,8 +868,6 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
   const [itemModal, setItemModal] = useState(null);
   const [addonModal, setAddonModal] = useState(null);
   const [itemsLoading, setItemsLoading] = useState(false);
-
-  // Frequency & Coupons
   const [freqs, setFreqs] = useState([]);
   const [freqModal, setFreqModal] = useState(null);
   const [coupons, setCoupons] = useState([]);
@@ -1005,24 +937,24 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
     setCatModal(null);
   }
   async function delCat(id) {
-    setConfirm({ msg: "Delete this category and all its items?", action: async () => {
+    setConfirm({ msg: "Delete this category?", action: async () => {
       await supabase.from("service_categories").delete().eq("id", id);
       setCategories(p => p.filter(c => c.id !== id)); if (selCat?.id === id) setSelCat(null); setConfirm(null);
     }});
   }
   async function saveItem(d) {
-    const payload = { name: d.name, unit_type: d.unit_type, unit_price: Number(d.unit_price), default_quantity: Number(d.default_quantity) || 1, description: d.description || "", is_active: d.is_active !== false };
-    if (d.id) { await supabase.from("items").update(payload).eq("id", d.id); setAdminItems(p => p.map(i => i.id === d.id ? { ...i, ...payload } : i)); }
-    else { const { data } = await supabase.from("items").insert({ category_id: selCat.id, ...payload }).select().single(); if (data) setAdminItems(p => [...p, data]); }
+    const p = { name: d.name, unit_type: d.unit_type, unit_price: Number(d.unit_price), default_quantity: Number(d.default_quantity) || 1, description: d.description || "", is_active: d.is_active !== false };
+    if (d.id) { await supabase.from("items").update(p).eq("id", d.id); setAdminItems(prev => prev.map(i => i.id === d.id ? { ...i, ...p } : i)); }
+    else { const { data } = await supabase.from("items").insert({ category_id: selCat.id, ...p }).select().single(); if (data) setAdminItems(prev => [...prev, data]); }
     setItemModal(null);
   }
   async function delItem(id) {
     setConfirm({ msg: "Delete this item?", action: async () => { await supabase.from("items").delete().eq("id", id); setAdminItems(p => p.filter(i => i.id !== id)); setConfirm(null); }});
   }
   async function saveAddon(d) {
-    const payload = { name: d.name, unit_type: d.unit_type, unit_price: Number(d.unit_price), default_quantity: Number(d.default_quantity) || 1, description: d.description || "", is_active: d.is_active !== false };
-    if (d.id) { await supabase.from("addon_items").update(payload).eq("id", d.id); setAdminAddons(p => p.map(a => a.id === d.id ? { ...a, ...payload } : a)); }
-    else { const { data } = await supabase.from("addon_items").insert({ category_id: selCat.id, ...payload }).select().single(); if (data) setAdminAddons(p => [...p, data]); }
+    const p = { name: d.name, unit_type: d.unit_type, unit_price: Number(d.unit_price), default_quantity: Number(d.default_quantity) || 1, description: d.description || "", is_active: d.is_active !== false };
+    if (d.id) { await supabase.from("addon_items").update(p).eq("id", d.id); setAdminAddons(prev => prev.map(a => a.id === d.id ? { ...a, ...p } : a)); }
+    else { const { data } = await supabase.from("addon_items").insert({ category_id: selCat.id, ...p }).select().single(); if (data) setAdminAddons(prev => [...prev, data]); }
     setAddonModal(null);
   }
   async function delAddon(id) {
@@ -1052,7 +984,6 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
   async function delCoupon(id) {
     setConfirm({ msg: "Delete this coupon?", action: async () => { await supabase.from("coupons").delete().eq("id", id); setCoupons(p => p.filter(c => c.id !== id)); setConfirm(null); }});
   }
-
   function inviteAdmin() {
     if (!inviteForm.name || !inviteForm.email || !inviteForm.password) { alert("All fields required"); return; }
     if (allAdmins.find(a => a.email.toLowerCase() === inviteForm.email.toLowerCase())) { alert("Email already exists"); return; }
@@ -1060,7 +991,7 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
     const updated = [...admins, newAdmin];
     setAdmins(updated); sessionStorage.setItem("adminList", JSON.stringify(updated));
     setInviteForm({ name: "", email: "", password: "" }); setInviteModal(false);
-    alert(`✅ Admin "${newAdmin.name}" created!\n\nAdd to HARDCODED_ADMINS:\n{ id:"${newAdmin.id}", name:"${newAdmin.name}", email:"${newAdmin.email}", password:"${newAdmin.password}", role:"admin" }`);
+    alert(`✅ Admin "${newAdmin.name}" created!\nAdd to HARDCODED_ADMINS:\n{ id:"${newAdmin.id}", name:"${newAdmin.name}", email:"${newAdmin.email}", password:"${newAdmin.password}", role:"admin" }`);
   }
   function delAdmin(id) {
     if (id === "super") { alert("Cannot delete Super Admin!"); return; }
@@ -1077,11 +1008,10 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
     alert("✅ Password reset! Also update HARDCODED_ADMINS in App.js.");
   }
 
-  // ── FORMS ──
   function CatForm({ data, onSave }) {
     const [f, setF] = useState({ name: "", icon: "🧹", description: "", ...data });
     return <>
-      <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Category Name *</div><input value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Window Cleaning" style={S.inp} /></div>
+      <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Name *</div><input value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Window Cleaning" style={S.inp} /></div>
       <div style={{ marginBottom: 14 }}>
         <div style={S.sLbl}>Icon</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -1096,14 +1026,14 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
   function ItemForm({ data, onSave, label }) {
     const [f, setF] = useState({ name: "", unit_type: "Per Visit", unit_price: 0, default_quantity: 1, description: "", ...data });
     return <>
-      <div style={{ marginBottom: 14 }}><div style={S.sLbl}>{label} Name *</div><input value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Standard Clean" style={S.inp} /></div>
+      <div style={{ marginBottom: 14 }}><div style={S.sLbl}>{label} Name *</div><input value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} style={S.inp} /></div>
       <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Description</div><textarea value={f.description || ""} onChange={e => setF(p => ({ ...p, description: e.target.value }))} rows={2} style={{ ...S.inp, resize: "vertical" }} /></div>
       <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Unit Type *</div><select value={f.unit_type} onChange={e => setF(p => ({ ...p, unit_type: e.target.value }))} style={S.inp}>{UNIT_TYPES.map(u => <option key={u}>{u}</option>)}</select></div>
       <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Unit Price ($) *</div><input type="number" min={0} step={0.01} value={f.unit_price} onChange={e => setF(p => ({ ...p, unit_price: e.target.value }))} style={S.inp} /></div>
       <div style={{ marginBottom: 20 }}>
         <div style={S.sLbl}>Default Quantity *</div>
         <input type="number" min={0} step={0.5} value={f.default_quantity} onChange={e => setF(p => ({ ...p, default_quantity: e.target.value }))} style={S.inp} />
-        <div style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>Pre-filled in booking form. Multiplied by visits automatically.</div>
+        <div style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>Pre-filled in booking. Multiplied by total visits automatically.</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <button style={{ ...S.btn(BG, MUTED, BORDER), padding: 14 }} onClick={() => onSave({ ...f, is_active: false })}>Save Inactive</button>
@@ -1124,16 +1054,16 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
   function CouponForm({ data, onSave }) {
     const [f, setF] = useState({ code: "", discount_type: "percent", discount_value: 10, ...data });
     return <>
-      <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Coupon Code *</div><input value={f.code} onChange={e => setF(p => ({ ...p, code: e.target.value.toUpperCase() }))} placeholder="e.g. SAVE20" style={S.inp} /></div>
+      <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Code *</div><input value={f.code} onChange={e => setF(p => ({ ...p, code: e.target.value.toUpperCase() }))} placeholder="e.g. SAVE20" style={S.inp} /></div>
       <div style={{ marginBottom: 14 }}>
-        <div style={S.sLbl}>Discount Type</div>
+        <div style={S.sLbl}>Type</div>
         <div style={{ display: "flex", gap: 10 }}>
-          {[["percent","% Percentage"],["flat","$ Flat Amount"]].map(([v, l]) => (
+          {[["percent","% Percentage"],["flat","$ Flat"]].map(([v, l]) => (
             <div key={v} onClick={() => setF(p => ({ ...p, discount_type: v }))} style={{ flex: 1, border: `2px solid ${f.discount_type === v ? BLUE : BORDER}`, borderRadius: 9, padding: "10px", cursor: "pointer", background: f.discount_type === v ? LIGHT_BLUE : WHITE, color: f.discount_type === v ? BLUE : MUTED, fontWeight: 700, fontSize: 13, textAlign: "center" }}>{l}</div>
           ))}
         </div>
       </div>
-      <div style={{ marginBottom: 20 }}><div style={S.sLbl}>Value ({f.discount_type === "percent" ? "%" : "$"}) *</div><input type="number" min={0} value={f.discount_value} onChange={e => setF(p => ({ ...p, discount_value: e.target.value }))} style={S.inp} /></div>
+      <div style={{ marginBottom: 20 }}><div style={S.sLbl}>Value *</div><input type="number" min={0} value={f.discount_value} onChange={e => setF(p => ({ ...p, discount_value: e.target.value }))} style={S.inp} /></div>
       <button style={{ ...S.btn(BLUE, WHITE), width: "100%", padding: 14 }} onClick={() => onSave(f)}>Save Coupon</button>
     </>;
   }
@@ -1165,17 +1095,15 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
       {addonModal && <Modal title={addonModal.data?.id ? "Edit Add-on" : "New Add-on"} onClose={() => setAddonModal(null)}><ItemForm data={addonModal.data} onSave={saveAddon} label="Add-on" /></Modal>}
       {freqModal && <Modal title="Edit Frequency Discount" onClose={() => setFreqModal(null)}><FreqForm data={freqModal.data} onSave={saveFreq} /></Modal>}
       {couponModal && <Modal title={couponModal.data?.id ? "Edit Coupon" : "New Coupon"} onClose={() => setCouponModal(null)}><CouponForm data={couponModal.data} onSave={saveCoupon} /></Modal>}
-
       {inviteModal && <Modal title="Invite New Admin" onClose={() => setInviteModal(false)}>
         {[["Full Name","name","text","John Smith"],["Email","email","email","john@example.com"],["Password","password","text","StrongPass123"]].map(([l,k,t,p]) => (
           <div key={k} style={{ marginBottom: 14 }}><div style={S.sLbl}>{l}</div><input type={t} value={inviteForm[k]} onChange={e => setInviteForm(f => ({ ...f, [k]: e.target.value }))} placeholder={p} style={S.inp} /></div>
         ))}
-        <div style={{ background: "#fff8e1", borderRadius: 9, padding: "10px 14px", fontSize: 13, color: "#7a5c00", marginBottom: 14 }}>⚠️ After creating, add to HARDCODED_ADMINS in App.js for cross-device login.</div>
+        <div style={{ background: "#fff8e1", borderRadius: 9, padding: "10px 14px", fontSize: 13, color: "#7a5c00", marginBottom: 14 }}>⚠️ Add to HARDCODED_ADMINS in App.js after creating.</div>
         <button style={{ ...S.btn(GREEN, WHITE), width: "100%", padding: 14 }} onClick={inviteAdmin}>Create Admin</button>
       </Modal>}
-
       {resetModal && <Modal title={`Reset Password — ${resetModal.name}`} onClose={() => { setResetModal(null); setResetForm({ newPw: "", confirm: "" }); }}>
-        {[["New Password","newPw"],["Confirm Password","confirm"]].map(([l,k]) => (
+        {[["New Password","newPw"],["Confirm","confirm"]].map(([l,k]) => (
           <div key={k} style={{ marginBottom: 14 }}><div style={S.sLbl}>{l}</div><input type="password" value={resetForm[k]} onChange={e => setResetForm(f => ({ ...f, [k]: e.target.value }))} placeholder="••••••••" style={S.inp} /></div>
         ))}
         <button style={{ ...S.btn(BLUE, WHITE), width: "100%", padding: 14 }} onClick={resetAdminPw}>Reset Password</button>
@@ -1196,7 +1124,6 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
         </div>
 
         <div style={{ padding: mobile ? "12px 16px" : "24px 28px" }}>
-          {/* Stats */}
           <div style={{ display: "grid", gridTemplateColumns: mobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: mobile ? 10 : 14, marginBottom: 24 }}>
             {[{ icon: "📋", label: "Bookings", value: bookings.length, color: BLUE, bg: LIGHT_BLUE }, { icon: "💰", label: "Revenue", value: fmt(revenue), color: GREEN, bg: LIGHT_GREEN }, { icon: "⏳", label: "Pending", value: bookings.filter(b => b.status === "Pending").length, color: "#e67e22", bg: "#fff8f0" }, { icon: "👥", label: "Clients", value: clients.length, color: BLUE, bg: LIGHT_BLUE }].map(({ icon, label, value, color, bg }) => (
               <div key={label} style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: mobile ? 14 : 20, display: "flex", alignItems: "center", gap: 12 }}>
@@ -1206,15 +1133,13 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
             ))}
           </div>
 
-          {/* ADMINS */}
           {tab === "admins" && isSuperAdmin && <>
             <div style={{ background: `linear-gradient(135deg,${BLUE},#2196f3)`, borderRadius: 14, padding: "20px 24px", marginBottom: 20, color: WHITE }}>
               <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.8, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>Super Admin Panel</div>
               <div style={{ fontSize: 18, fontWeight: 800 }}>Manage Admin Accounts</div>
-              <div style={{ fontSize: 13, opacity: 0.75, marginTop: 4 }}>Hidden from all other admins.</div>
             </div>
             <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#7a5c00", marginBottom: 16 }}>
-              ⚠️ After creating an admin, add to <strong>HARDCODED_ADMINS</strong> in App.js for cross-device login.
+              ⚠️ After creating, add to <strong>HARDCODED_ADMINS</strong> in App.js.
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
               <button style={S.btn(GREEN, WHITE)} onClick={() => setInviteModal(true)}>+ Invite New Admin</button>
@@ -1239,7 +1164,6 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
             </div>
           </>}
 
-          {/* BOOKINGS */}
           {tab === "bookings" && <>
             <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search…" style={{ ...S.inp, flex: 1, padding: "10px 14px" }} />
@@ -1276,7 +1200,6 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
             </div>
           </>}
 
-          {/* CLIENTS */}
           {tab === "clients" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {clients.length === 0 && <div style={{ background: WHITE, borderRadius: 12, border: `1px solid ${BORDER}`, padding: 32, color: MUTED, textAlign: "center" }}>No clients yet.</div>}
@@ -1296,7 +1219,6 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
             </div>
           )}
 
-          {/* CATEGORIES */}
           {tab === "categories" && <>
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
               <button style={S.btn(BLUE, WHITE)} onClick={() => setCatModal({ data: {} })}>+ New Category</button>
@@ -1317,7 +1239,6 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
             </div>
           </>}
 
-          {/* ITEMS */}
           {tab === "items" && <>
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 8 }}>Select Category</div>
@@ -1353,7 +1274,6 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
             </>}
           </>}
 
-          {/* ADDONS */}
           {tab === "addons" && <>
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 8 }}>Select Category</div>
@@ -1389,10 +1309,9 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
             </>}
           </>}
 
-          {/* FREQUENCY */}
           {tab === "frequency" && <>
             <div style={{ background: LIGHT_BLUE, borderRadius: 12, padding: "14px 18px", marginBottom: 20, fontSize: 13, color: BLUE, fontWeight: 600 }}>
-              💡 Set discount % for each frequency. Applied automatically at checkout.
+              💡 Set discount % for each frequency. Applied at checkout.
             </div>
             <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(auto-fill,minmax(260px,1fr))", gap: 14 }}>
               {freqs.map(f => (
@@ -1409,7 +1328,6 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
             </div>
           </>}
 
-          {/* COUPONS */}
           {tab === "coupons" && <>
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
               <button style={S.btn(BLUE, WHITE)} onClick={() => setCouponModal({ data: {} })}>+ New Coupon</button>
@@ -1427,7 +1345,7 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
                   </div>
                   <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 8 }}>
                     <button onClick={() => toggleCoupon(c.id)} style={{ background: c.is_active ? LIGHT_GREEN : "#fdecea", color: c.is_active ? GREEN : "#e74c3c", border: "none", borderRadius: 50, padding: "6px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>{c.is_active ? "● Active" : "○ Inactive"}</button>
-                    <button onClick={() => setCouponModal({ data: c })} style={{ ...S.btn(LIGHT_BLUE, BLUE), padding: "7px 12px", fontSize: 12 }}>✏️ Edit</button>
+                    <button onClick={() => setCouponModal({ data: c })} style={{ ...S.btn(LIGHT_BLUE, BLUE), padding: "7px 12px", fontSize: 12 }}>✏️</button>
                     <button onClick={() => delCoupon(c.id)} style={{ ...S.btn("#fdecea", "#e74c3c"), padding: "7px 12px", fontSize: 12 }}>🗑</button>
                   </div>
                 </div>
@@ -1517,7 +1435,6 @@ export default function App() {
   const [user, setUser] = useState(() => { try { return JSON.parse(sessionStorage.getItem("user")); } catch { return null; } });
   const [adminUser, setAdminUser] = useState(() => { try { return JSON.parse(sessionStorage.getItem("adminUser")); } catch { return null; } });
   const isAdmin = !!adminUser;
-
   const [categories, setCategories] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [clients, setClients] = useState([]);
