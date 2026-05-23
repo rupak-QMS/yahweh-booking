@@ -161,8 +161,8 @@ function QuoteSidebar({ items, addons, freqId, period, couponPct, isNDIS, onAppl
   const [couponMsg, setCouponMsg] = useState(null);
   const visits = getVisits(freqId, period);
 
-  const itemsTotal = items.reduce((s, i) => s + (Number(i.unit_price) * Number(i.qty) * visits), 0);
-  const addonsTotal = addons.reduce((s, a) => s + (Number(a.unit_price) * Number(a.qty) * visits), 0);
+  const itemsTotal = items.reduce((s, i) => s + (Number(i.unit_price) * Number(i.qty)), 0);
+  const addonsTotal = addons.reduce((s, a) => s + (Number(a.unit_price) * Number(a.qty)), 0);
   const subtotal = itemsTotal + addonsTotal;
   const couponDisc = couponPct > 0 ? Math.round(subtotal * couponPct / 100) : 0;
   const afterDisc = subtotal - couponDisc;
@@ -262,8 +262,8 @@ function BookingApp({ user, categories, onComplete }) {
   const visits = getVisits(freqId, period);
   const isNDIS = selCat?.name?.includes("NDIS");
 
-  const itemsTotal = quoteItems.reduce((s, i) => s + (Number(i.unit_price) * Number(i.qty) * (visits || 1)), 0);
-  const addonsTotal = quoteAddons.reduce((s, a) => s + (Number(a.unit_price) * Number(a.qty) * (visits || 1)), 0);
+  const itemsTotal = quoteItems.reduce((s, i) => s + (Number(i.unit_price) * Number(i.qty)), 0);
+  const addonsTotal = quoteAddons.reduce((s, a) => s + (Number(a.unit_price) * Number(a.qty)), 0);
   const subtotal = itemsTotal + addonsTotal;
   const couponDisc = couponPct > 0 ? Math.round(subtotal * couponPct / 100) : 0;
   const afterDisc = subtotal - couponDisc;
@@ -519,7 +519,7 @@ function BookingApp({ user, categories, onComplete }) {
                       </div>
                       <div>
                         <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Amount</div>
-                        <div style={{ background: LIGHT_BLUE, border: `1.5px solid ${BLUE}22`, borderRadius: 9, padding: "11px 10px", fontWeight: 900, fontSize: 14, color: BLUE, textAlign: "center" }}>{fmt(Number(item.unit_price) * Number(item.qty) * (visits || 1))}</div>
+                        <div style={{ background: LIGHT_BLUE, border: `1.5px solid ${BLUE}22`, borderRadius: 9, padding: "11px 10px", fontWeight: 900, fontSize: 14, color: BLUE, textAlign: "center" }}>{fmt(Number(item.unit_price) * Number(item.qty))}</div>
                       </div>
                     </div>
                   </div>
@@ -582,7 +582,7 @@ function BookingApp({ user, categories, onComplete }) {
                       </div>
                       <div>
                         <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Amount</div>
-                        <div style={{ background: WHITE, border: `1.5px solid ${GREEN}44`, borderRadius: 9, padding: "11px 10px", fontWeight: 900, fontSize: 14, color: GREEN, textAlign: "center" }}>+{fmt(Number(addon.unit_price) * Number(addon.qty) * (visits || 1))}</div>
+                        <div style={{ background: WHITE, border: `1.5px solid ${GREEN}44`, borderRadius: 9, padding: "11px 10px", fontWeight: 900, fontSize: 14, color: GREEN, textAlign: "center" }}>+{fmt(Number(addon.unit_price) * Number(addon.qty))}</div>
                       </div>
                     </div>
                   </div>
