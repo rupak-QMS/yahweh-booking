@@ -917,6 +917,7 @@ function BookingCard({ b, mobile }) {
 }
 
 // ── SET PASSWORD PAGE (handles email verification link) ──
+
 function SetPasswordPage({ onDone }) {
   const mobile = useIsMobile();
   const [pass, setPass] = useState("");
