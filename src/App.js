@@ -283,9 +283,9 @@ function BookingApp({ user, categories, onComplete }) {
   function updateItem(idx, field, val) {
     setQuoteItems(p => p.map((it, i) => {
       if (i !== idx) return it;
-      if (field === "item_id") {
+              if (field === "item_id") {
         const found = catItems.find(c => c.id === val);
-        return found ? { ...it, item_id: val, name: found.name, unit_type: found.unit_type, unit_price: found.unit_price, qty: 1 } : { ...it, item_id: val };
+        return found ? { ...it, item_id: val, name: found.name, unit_type: found.unit_type, unit_price: found.unit_price, qty: found.default_quantity || 1 } : { ...it, item_id: val };
       }
       return { ...it, [field]: val };
     }));
@@ -301,7 +301,7 @@ function BookingApp({ user, categories, onComplete }) {
       if (i !== idx) return a;
       if (field === "addon_id") {
         const found = catAddons.find(c => c.id === val);
-        return found ? { ...a, addon_id: val, name: found.name, unit_type: found.unit_type, unit_price: found.unit_price, qty: 1 } : { ...a, addon_id: val };
+        return found ? { ...a, addon_id: val, name: found.name, unit_type: found.unit_type, unit_price: found.unit_price, qty: found.default_quantity || 1 } : { ...a, addon_id: val };
       }
       return { ...a, [field]: val };
     }));
@@ -872,16 +872,18 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
 
   // ── Items ──
   async function saveItem(d) {
-    if (d.id) { await supabase.from("items").update({ name: d.name, unit_type: d.unit_type, unit_price: Number(d.unit_price) }).eq("id", d.id); setCatItems(p => p.map(i => i.id === d.id ? { ...i, ...d, unit_price: Number(d.unit_price) } : i)); }
-    else { const { data } = await supabase.from("items").insert({ category_id: selCat.id, name: d.name, unit_type: d.unit_type, unit_price: Number(d.unit_price), is_active: true }).select().single(); if (data) setCatItems(p => [...p, data]); }
+    const payload = { name: d.name, unit_type: d.unit_type, unit_price: Number(d.unit_price), default_quantity: Number(d.default_quantity) || 1, description: d.description || "", is_active: d.is_active !== false };
+    if (d.id) { await supabase.from("items").update(payload).eq("id", d.id); setCatItems(p => p.map(i => i.id === d.id ? { ...i, ...payload } : i)); }
+    else { const { data } = await supabase.from("items").insert({ category_id: selCat.id, ...payload }).select().single(); if (data) setCatItems(p => [...p, data]); }
     setItemModal(null);
   }
   async function delItem(id) {
     setConfirm({ msg: "Delete this item?", action: async () => { await supabase.from("items").delete().eq("id", id); setCatItems(p => p.filter(i => i.id !== id)); setConfirm(null); }});
   }
   async function saveAddon(d) {
-    if (d.id) { await supabase.from("addon_items").update({ name: d.name, unit_type: d.unit_type, unit_price: Number(d.unit_price) }).eq("id", d.id); setCatAddons(p => p.map(a => a.id === d.id ? { ...a, ...d, unit_price: Number(d.unit_price) } : a)); }
-    else { const { data } = await supabase.from("addon_items").insert({ category_id: selCat.id, name: d.name, unit_type: d.unit_type, unit_price: Number(d.unit_price), is_active: true }).select().single(); if (data) setCatAddons(p => [...p, data]); }
+    const payload = { name: d.name, unit_type: d.unit_type, unit_price: Number(d.unit_price), default_quantity: Number(d.default_quantity) || 1, description: d.description || "", is_active: d.is_active !== false };
+    if (d.id) { await supabase.from("addon_items").update(payload).eq("id", d.id); setCatAddons(p => p.map(a => a.id === d.id ? { ...a, ...payload } : a)); }
+    else { const { data } = await supabase.from("addon_items").insert({ category_id: selCat.id, ...payload }).select().single(); if (data) setCatAddons(p => [...p, data]); }
     setAddonModal(null);
   }
   async function delAddon(id) {
@@ -960,12 +962,21 @@ function AdminDash({ bookings, setBookings, clients, setClients, categories, set
   }
 
   function ItemForm({ data, onSave, label }) {
-    const [f, setF] = useState({ name: "", unit_type: "Per Visit", unit_price: 0, ...data });
+    const [f, setF] = useState({ name: "", unit_type: "Per Visit", unit_price: 0, default_quantity: 1, description: "", ...data });
     return <>
       <div style={{ marginBottom: 14 }}><div style={S.sLbl}>{label} Name *</div><input value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Standard Clean" style={S.inp} /></div>
+      <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Description</div><textarea value={f.description || ""} onChange={e => setF(p => ({ ...p, description: e.target.value }))} placeholder="Enter a description for this item" rows={3} style={{ ...S.inp, resize: "vertical" }} /></div>
       <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Unit Type *</div><select value={f.unit_type} onChange={e => setF(p => ({ ...p, unit_type: e.target.value }))} style={S.inp}>{UNIT_TYPES.map(u => <option key={u}>{u}</option>)}</select></div>
-      <div style={{ marginBottom: 20 }}><div style={S.sLbl}>Unit Price ($) *</div><input type="number" min={0} step={0.01} value={f.unit_price} onChange={e => setF(p => ({ ...p, unit_price: e.target.value }))} style={S.inp} /></div>
-      <button style={{ ...S.btn(BLUE, WHITE), width: "100%", padding: 14 }} onClick={() => onSave(f)}>Save {label}</button>
+      <div style={{ marginBottom: 14 }}><div style={S.sLbl}>Unit Price ($) *</div><input type="number" min={0} step={0.01} value={f.unit_price} onChange={e => setF(p => ({ ...p, unit_price: e.target.value }))} placeholder="0.00" style={S.inp} /></div>
+      <div style={{ marginBottom: 20 }}>
+        <div style={S.sLbl}>Default Quantity *</div>
+        <input type="number" min={1} value={f.default_quantity} onChange={e => setF(p => ({ ...p, default_quantity: e.target.value }))} placeholder="1" style={S.inp} />
+        <div style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>This quantity will be pre-filled in the booking form.</div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <button style={{ ...S.btn(BG, MUTED, BORDER), padding: 14 }} onClick={() => { onSave({ ...f, is_active: false }); }}>Save as Inactive</button>
+        <button style={{ ...S.btn(BLUE, WHITE), padding: 14 }} onClick={() => onSave({ ...f, is_active: true })}>Save {label}</button>
+      </div>
     </>;
   }
 
