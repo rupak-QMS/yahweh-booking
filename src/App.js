@@ -424,7 +424,7 @@ function BookingApp({ user, categories, onComplete }) {
           <button style={{ ...S.btn(WHITE, BLUE, BLUE), padding: 14 }} onClick={() => { setDone(false); setStep(1); setMaxStep(1); setConfirmedBooking(null); }}>+ New Booking</button>
           {user
             ? <button style={{ ...S.btn(BLUE, WHITE), padding: 14 }} onClick={() => window.location.href = "/client"}>My Bookings</button>
-            : <button style={{ ...S.btn(BLUE, WHITE), padding: 14 }} onClick={() => window.location.href = "/login"}>Login to View</button>
+            : <button style={{ ...S.btn(GREEN, WHITE), padding: 14 }} onClick={() => window.location.href = "/book"}>Book Another</button>
           }
         </div>
       </div>
