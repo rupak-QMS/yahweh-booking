@@ -502,7 +502,7 @@ function BookingApp({ user, categories, onComplete }) {
                         <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Item / Service</div>
                         <select value={item.item_id} onChange={e => updateItem(idx, "item_id", e.target.value)} style={S.inp}>
                           <option value="">Select item…</option>
-                          {catItems.map(ci => <option key={ci.id} value={ci.id}>{ci.name}</option>)}
+                          {bookingCatItems.map(ci => <option key={ci.id} value={ci.id}>{ci.name}</option>)}
                         </select>
                       </div>
                       <div>
@@ -565,7 +565,7 @@ function BookingApp({ user, categories, onComplete }) {
                         <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Add-on Item</div>
                         <select value={addon.addon_id} onChange={e => updateAddon(idx, "addon_id", e.target.value)} style={S.inp}>
                           <option value="">Select add-on…</option>
-                          {catAddons.map(ca => <option key={ca.id} value={ca.id}>{ca.name}</option>)}
+                          {bookingCatAddons.map(ca => <option key={ca.id} value={ca.id}>{ca.name}</option>)}
                         </select>
                       </div>
                       <div>
