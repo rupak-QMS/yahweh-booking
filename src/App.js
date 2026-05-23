@@ -246,6 +246,8 @@ function BookingApp({ user, categories, onComplete }) {
     cardName: "", cardNum: "", cardExp: "", cardCvv: "",
   });
 
+  const [confirmedBooking, setConfirmedBooking] = useState(null);
+
   const visits = getVisits(freqId, period);
   const isNDIS = selCat?.name?.includes("NDIS");
 
@@ -367,7 +369,9 @@ function BookingApp({ user, categories, onComplete }) {
         });
       } catch (e) { console.warn("Email failed:", e); }
 
-      onComplete({ id: bookingId, clientId: clientData.id, clientName: fullName, clientEmail: client.email, service: firstItem?.name || selCat?.name, date: date.toISOString().split("T")[0], time, address, total, status: "Confirmed", freq: freq?.label || freqId, extras: [] });
+      const nb = { id: bookingId, clientId: clientData.id, clientName: fullName, clientEmail: client.email, service: firstItem?.name || selCat?.name, date: date.toISOString().split("T")[0], time, address, total, status: "Confirmed", freq: freq?.label || freqId, extras: [] };
+      onComplete(nb);
+      setConfirmedBooking(nb);
       setDone(true);
     } catch (err) {
       console.error(err);
@@ -378,19 +382,74 @@ function BookingApp({ user, categories, onComplete }) {
   const today = new Date();
   const dates = Array.from({ length: 21 }, (_, i) => { const d = new Date(today); d.setDate(today.getDate() + i); return d; });
 
-  if (done) return (
-    <div style={{ maxWidth: 540, margin: "48px auto", padding: 16 }}>
-      <div style={{ ...S.panel(mobile), textAlign: "center", padding: "52px 36px" }}>
-        <div style={{ width: 72, height: 72, background: LIGHT_GREEN, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 36 }}>✅</div>
-        <h2 style={{ fontSize: 26, fontWeight: 900, color: GREEN, marginBottom: 8 }}>Booking Confirmed!</h2>
-        <p style={{ color: MUTED, marginBottom: 20, fontSize: 14 }}>Confirmation sent to <strong style={{ color: BLUE }}>{client.email}</strong></p>
-        <div style={{ background: BG, borderRadius: 12, padding: 16, textAlign: "left", marginBottom: 20 }}>
-          {[["Date", date?.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })], ["Time", time], ["Visits", `${visits} visits over ${period} month${period > 1 ? "s" : ""}`], ["Total (AUD)", fmt(total)]].map(([k, v]) => (
-            <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 14 }}><span style={{ color: MUTED }}>{k}</span><span style={{ fontWeight: 700 }}>{v}</span></div>
+  if (done && confirmedBooking) return (
+    <div style={{ maxWidth: 580, margin: "48px auto", padding: 16, paddingBottom: mobile ? 90 : 16 }}>
+      <div style={{ ...S.panel(mobile), padding: "36px 32px" }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ width: 72, height: 72, background: LIGHT_GREEN, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 36 }}>✅</div>
+          <h2 style={{ fontSize: 26, fontWeight: 900, color: GREEN, marginBottom: 8 }}>Booking Confirmed!</h2>
+          <p style={{ color: MUTED, fontSize: 14 }}>Confirmation sent to <strong style={{ color: BLUE }}>{client.email}</strong></p>
+        </div>
+
+        {/* Booking ID */}
+        <div style={{ background: LIGHT_BLUE, borderRadius: 10, padding: "12px 16px", textAlign: "center", marginBottom: 20 }}>
+          <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Booking ID</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: BLUE }}>{confirmedBooking.id}</div>
+        </div>
+
+        {/* Booking Details */}
+        <div style={{ background: BG, borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Service Details</div>
+          {[
+            ["Service", confirmedBooking.service],
+            ["Category", selCat?.name],
+            ["Frequency", FREQUENCIES.find(f => f.id === freqId)?.label || freqId],
+            ["Period", `${period} month${period > 1 ? "s" : ""}`],
+            ["Total Visits", `${visits} visits`],
+            ["Start Date", date?.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })],
+            ["Start Time", time],
+          ].map(([k, v]) => (
+            <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 14 }}>
+              <span style={{ color: MUTED }}>{k}</span>
+              <span style={{ fontWeight: 600, textAlign: "right", maxWidth: "60%" }}>{v}</span>
+            </div>
           ))}
         </div>
-        <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#7a5c00", marginBottom: 20 }}>⏰ Our team will call <strong>{client.phone}</strong> within 2 hours.</div>
-        <button style={{ ...S.btn(BLUE, WHITE), width: "100%", padding: 14 }} onClick={() => { setDone(false); setStep(1); setMaxStep(1); }}>Book Another Clean</button>
+
+        {/* Address */}
+        <div style={{ background: BG, borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Location</div>
+          <div style={{ fontSize: 14, color: TEXT }}>{confirmedBooking.address}</div>
+        </div>
+
+        {/* Pricing */}
+        <div style={{ background: BG, borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Pricing</div>
+          {[
+            ["Subtotal", fmt(subtotal)],
+            ...(couponDisc > 0 ? [["Discount", `-${fmt(couponDisc)}`]] : []),
+            ["GST", isNDIS ? "GST Free" : fmt(gst)],
+          ].map(([k, v]) => (
+            <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 14 }}>
+              <span style={{ color: MUTED }}>{k}</span>
+              <span style={{ fontWeight: 600 }}>{v}</span>
+            </div>
+          ))}
+          <hr style={{ border: "none", borderTop: `1px dashed ${BORDER}`, margin: "10px 0" }} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontWeight: 800, fontSize: 15 }}>Total (AUD)</span>
+            <span style={{ fontWeight: 900, fontSize: 22, color: BLUE }}>{fmt(total)}</span>
+          </div>
+        </div>
+
+        <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#7a5c00", marginBottom: 20 }}>
+          ⏰ Our team will call <strong>{client.phone}</strong> within 2 hours to confirm your appointment.
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <button style={{ ...S.btn(WHITE, BLUE, BLUE), padding: 14, fontSize: 13 }} onClick={() => { setDone(false); setStep(1); setMaxStep(1); setConfirmedBooking(null); }}>+ New Booking</button>
+          <button style={{ ...S.btn(BLUE, WHITE), padding: 14, fontSize: 13 }} onClick={() => window.location.href = user ? "/client" : `/book?ref=${confirmedBooking.id}`}>View Booking</button>
+        </div>
       </div>
     </div>
   );
@@ -566,6 +625,35 @@ function BookingApp({ user, categories, onComplete }) {
           {step === 3 && (
             <div style={S.panel(mobile)}>
               <div style={S.secTitle(mobile)}>Choose Start Date & Time</div>
+
+              {/* Period & Frequency reminder */}
+              <div style={{ background: LIGHT_BLUE, borderRadius: 12, padding: "14px 18px", marginBottom: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>📅 Service Period & Frequency</div>
+                <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr 1fr", gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 6 }}>Service Frequency *</div>
+                    <select value={freqId} onChange={e => setFreqId(e.target.value)} style={S.inp}>
+                      <option value="">Select frequency…</option>
+                      {FREQUENCIES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 6 }}>Service Period *</div>
+                    <select value={period} onChange={e => setPeriod(Number(e.target.value))} style={S.inp}>
+                      {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 6 }}>Total Visits</div>
+                    <div style={{ border: `1.5px solid ${BLUE}44`, borderRadius: 9, padding: "11px 14px", background: WHITE, fontWeight: 900, fontSize: 20, color: BLUE, textAlign: "center" }}>
+                      {visits > 0 ? visits : "—"}
+                      {visits > 0 && <div style={{ fontSize: 10, color: MUTED, fontWeight: 500 }}>visits</div>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Date */}
               <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>📅 Start Date</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: mobile ? 4 : 6, marginBottom: 20 }}>
                 {DAYS.map(d => <div key={d} style={{ textAlign: "center", fontSize: 10, color: MUTED, fontWeight: 800, padding: "3px 0" }}>{d}</div>)}
@@ -576,10 +664,14 @@ function BookingApp({ user, categories, onComplete }) {
                   </div>
                 );})}
               </div>
+
+              {/* Time */}
               <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>🕐 Start Time</div>
               <div style={{ display: "grid", gridTemplateColumns: mobile ? "repeat(3,1fr)" : "repeat(auto-fill,minmax(100px,1fr))", gap: mobile ? 8 : 10 }}>
                 {TIME_SLOTS.map(t => { const a = time === t; return <div key={t} onClick={() => setTime(t)} style={{ border: `2px solid ${a ? BLUE : BORDER}`, borderRadius: 10, padding: mobile ? "11px 6px" : 12, textAlign: "center", cursor: "pointer", background: a ? BLUE : WHITE, color: a ? WHITE : MUTED, fontWeight: a ? 800 : 500, fontSize: mobile ? 12 : 13 }}>{t}</div>; })}
               </div>
+
+              {/* Confirmation */}
               {date && (
                 <div style={{ marginTop: 16, background: LIGHT_GREEN, border: `1px solid ${GREEN}44`, borderRadius: 12, padding: "14px 18px" }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: GREEN, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>✅ Schedule Confirmed</div>
