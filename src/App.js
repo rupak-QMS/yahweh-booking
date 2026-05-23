@@ -240,8 +240,8 @@ function BookingApp({ user, categories, onComplete }) {
 
   // Quote state
   const [selCat, setSelCat] = useState(null);
-  const [catItems, setCatItems] = useState([]); // eslint-disable-line no-unused-vars
-  const [catAddons, setCatAddons] = useState([]); // eslint-disable-line no-unused-vars
+  const [catItems, setCatItems] = useState([]);
+  const [catAddons, setCatAddons] = useState([]);
   const [freqId, setFreqId] = useState("");
   const [period, setPeriod] = useState(1);
   const [quoteItems, setQuoteItems] = useState([{ id: uid(), item_id: "", name: "", unit_type: "", unit_price: 0, qty: 1 }]);
