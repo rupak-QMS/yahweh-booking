@@ -658,9 +658,9 @@ function BookingApp({ user, categories, onComplete }) {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: mobile ? 4 : 6, marginBottom: 20 }}>
                 {DAYS.map(d => <div key={d} style={{ textAlign: "center", fontSize: 10, color: MUTED, fontWeight: 800, padding: "3px 0" }}>{d}</div>)}
                 {dates.map((d, i) => { const a = date && d.toDateString() === date.toDateString(); const past = d < today && d.toDateString() !== today.toDateString(); return (
-                  <div key={i} onClick={() => !past && setDate(d)} style={{ border: `2px solid ${a ? BLUE : BORDER}`, borderRadius: 8, padding: mobile ? "8px 2px" : "10px 4px", textAlign: "center", cursor: past ? "not-allowed" : "pointer", background: a ? BLUE : past ? "#f8f8f8" : WHITE, opacity: past ? 0.4 : 1 }}>
-                    <div style={{ fontSize: 9, color: a ? "rgba(255,255,255,0.8)" : MUTED }}>{d.toLocaleString("default", { month: "short" })}</div>
-                    <div style={{ fontSize: mobile ? 13 : 16, fontWeight: 900, color: a ? WHITE : past ? "#ccc" : TEXT }}>{d.getDate()}</div>
+                  <div key={i} onClick={() => !past && setDate(d)} style={{ border: `2px solid ${a ? BLUE : BORDER}`, borderRadius: 8, padding: mobile ? "6px 2px" : "8px 4px", textAlign: "center", cursor: past ? "not-allowed" : "pointer", background: a ? BLUE : past ? "#f8f8f8" : WHITE, opacity: past ? 0.4 : 1 }}>
+                    <div style={{ fontSize: mobile ? 9 : 10, color: a ? "rgba(255,255,255,0.85)" : MUTED, fontWeight: 700 }}>{d.toLocaleString("default", { month: "short" })}</div>
+                    <div style={{ fontSize: mobile ? 14 : 18, fontWeight: 900, color: a ? WHITE : past ? "#ccc" : TEXT, lineHeight: 1.1 }}>{d.getDate()}</div>
                   </div>
                 );})}
               </div>
