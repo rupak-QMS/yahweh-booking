@@ -421,7 +421,7 @@ function BookingApp({ user, categories, onComplete }) {
         await fetch("https://nsvzbhnqmyqpsehueqhu.supabase.co/functions/v1/send-booking-email", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}` },
-          body: JSON.stringify({
+                      body: JSON.stringify({
             type: "both",
             booking: {
               bookingId, clientName: fullName, clientEmail: email,
@@ -430,6 +430,7 @@ function BookingApp({ user, categories, onComplete }) {
               freq: freq?.label || freqId,
               extras: quoteAddons.filter(a => a.name).map(a => a.name),
               notes: client.notes, subtotal, discountAmount: couponDisc, gst, total, isNDIS,
+              isNewAccount: accountJustCreated,  // ← tells Edge Function to generate setup link
             },
           }),
         });
