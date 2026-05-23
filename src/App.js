@@ -287,29 +287,41 @@ function BookingApp({ user, services, extras, coupons, freqs, onComplete }) {
 
       // 4. Send emails via Edge Function
       try {
-        await supabase.functions.invoke("send-booking-email", {
-          body: {
-            type: "both",
-            booking: {
-              bookingId,
-              clientName: fullName,
-              clientEmail: bk.email,
-              phone: bk.phone,
-              service: bk.svc.name,
-              date: bk.date.toISOString().split("T")[0],
-              time: bk.time,
-              address,
-              freq: bk.freq.label,
-              extras: bk.extras.map(e => e.name),
-              notes: bk.notes,
-              subtotal,
-              discountAmount: discAmt + couponDisc,
-              gst,
-              total,
-              isNDIS: bk.svc.id === "ndis",
-            },
+        const emailPayload = {
+          type: "both",
+          booking: {
+            bookingId,
+            clientName: fullName,
+            clientEmail: bk.email,
+            phone: bk.phone,
+            service: bk.svc.name,
+            date: bk.date.toISOString().split("T")[0],
+            time: bk.time,
+            address,
+            freq: bk.freq.label,
+            extras: bk.extras.map(e => e.name),
+            notes: bk.notes,
+            subtotal,
+            discountAmount: discAmt + couponDisc,
+            gst,
+            total,
+            isNDIS: bk.svc.id === "ndis",
           },
-        });
+        };
+        console.log("Sending email payload:", emailPayload);
+        const emailRes = await fetch(
+          "https://nsvzbhnqmyqpsehueqhu.supabase.co/functions/v1/send-booking-email",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify(emailPayload),
+          }
+        );
+        const emailResult = await emailRes.json();
+        console.log("Email result:", emailResult);
       } catch (emailErr) {
         console.warn("Email sending failed (booking still saved):", emailErr);
       }
