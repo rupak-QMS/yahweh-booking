@@ -489,34 +489,35 @@ function BookingApp({ user, categories, onComplete }) {
                 </div>
 
                 {quoteItems.map((item, idx) => (
-                  <div key={item.id} style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "3fr 1fr 1fr 1fr auto", gap: 8, marginBottom: 10, padding: "12px", background: BG, borderRadius: 10, border: `1px solid ${BORDER}` }}>
-                    {/* Item dropdown */}
-                    <div>
-                      {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Item / Service</div>}
-                      <select value={item.item_id} onChange={e => updateItem(idx, "item_id", e.target.value)} style={S.inp}>
-                        <option value="">Select item…</option>
-                        {catItems.map(ci => <option key={ci.id} value={ci.id}>{ci.name}</option>)}
-                      </select>
+                  <div key={item.id} style={{ marginBottom: 10, background: BG, borderRadius: 12, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderBottom: `1px solid ${BORDER}`, background: WHITE }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: BLUE }}>Item #{idx + 1}</span>
+                      {quoteItems.length > 1 && <button onClick={() => removeItem(idx)} style={{ background: "#fdecea", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 13, fontWeight: 800, borderRadius: 6, padding: "4px 10px", lineHeight: 1 }}>✕ Remove</button>}
                     </div>
-                    {/* Unit Type */}
-                    <div>
-                      {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Type</div>}
-                      <div style={{ border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: "11px 12px", fontSize: 13, color: MUTED, background: "#fafafa" }}>{item.unit_type || "—"}</div>
-                    </div>
-                    {/* Qty */}
-                    <div>
-                      {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Qty</div>}
-                      <input type="number" min={1} value={item.qty} onChange={e => updateItem(idx, "qty", e.target.value)} style={S.inp} />
-                    </div>
-                    {/* Price */}
-                    <div>
-                      {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Price ($)</div>}
-                      <input type="number" min={0} step={0.01} value={item.unit_price} onChange={e => updateItem(idx, "unit_price", e.target.value)} style={S.inp} />
-                    </div>
-                    {/* Amount + Delete */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: mobile ? "flex-start" : "center", justifyContent: "center", gap: 4 }}>
-                      <div style={{ fontWeight: 900, fontSize: 14, color: BLUE }}>{fmt(Number(item.unit_price) * Number(item.qty) * (visits || 1))}</div>
-                      {quoteItems.length > 1 && <button onClick={() => removeItem(idx)} style={{ background: "none", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 18 }}>×</button>}
+                    <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "3fr 120px 120px 130px 100px", gap: 10, padding: "12px 14px", alignItems: "end" }}>
+                      <div>
+                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Item / Service</div>
+                        <select value={item.item_id} onChange={e => updateItem(idx, "item_id", e.target.value)} style={S.inp}>
+                          <option value="">Select item…</option>
+                          {catItems.map(ci => <option key={ci.id} value={ci.id}>{ci.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Type</div>
+                        <div style={{ border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: "11px 10px", fontSize: 12, color: MUTED, background: WHITE, minHeight: 44 }}>{item.unit_type || "—"}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Qty</div>
+                        <input type="number" min={1} value={item.qty} onChange={e => updateItem(idx, "qty", e.target.value)} style={S.inp} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Price ($)</div>
+                        <input type="number" min={0} step={0.01} value={item.unit_price} onChange={e => updateItem(idx, "unit_price", e.target.value)} style={S.inp} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Amount</div>
+                        <div style={{ background: LIGHT_BLUE, border: `1.5px solid ${BLUE}22`, borderRadius: 9, padding: "11px 10px", fontWeight: 900, fontSize: 14, color: BLUE, textAlign: "center" }}>{fmt(Number(item.unit_price) * Number(item.qty) * (visits || 1))}</div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -549,29 +550,37 @@ function BookingApp({ user, categories, onComplete }) {
                 )}
 
                 {quoteAddons.map((addon, idx) => (
-                  <div key={addon.id} style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "3fr 1fr 1fr 1fr auto", gap: 8, marginBottom: 10, padding: "12px", background: LIGHT_GREEN, borderRadius: 10, border: `1px solid ${GREEN}33` }}>
-                    <div>
-                      {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Add-on Item</div>}
-                      <select value={addon.addon_id} onChange={e => updateAddon(idx, "addon_id", e.target.value)} style={S.inp}>
-                        <option value="">Select add-on…</option>
-                        {catAddons.map(ca => <option key={ca.id} value={ca.id}>{ca.name}</option>)}
-                      </select>
+                  <div key={addon.id} style={{ marginBottom: 10, background: LIGHT_GREEN, borderRadius: 12, border: `1px solid ${GREEN}33`, overflow: "hidden" }}>
+                    {/* Row header with delete */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderBottom: `1px solid ${GREEN}22` }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: GREEN }}>Add-on #{idx + 1}</span>
+                      <button onClick={() => removeAddon(idx)} style={{ background: "#fdecea", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 13, fontWeight: 800, borderRadius: 6, padding: "4px 10px", lineHeight: 1 }}>✕ Remove</button>
                     </div>
-                    <div>
-                      {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Type</div>}
-                      <div style={{ border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: "11px 12px", fontSize: 13, color: MUTED, background: "#fafafa" }}>{addon.unit_type || "—"}</div>
-                    </div>
-                    <div>
-                      {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Qty</div>}
-                      <input type="number" min={1} value={addon.qty} onChange={e => updateAddon(idx, "qty", e.target.value)} style={S.inp} />
-                    </div>
-                    <div>
-                      {mobile && <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Price ($)</div>}
-                      <input type="number" min={0} step={0.01} value={addon.unit_price} onChange={e => updateAddon(idx, "unit_price", e.target.value)} style={S.inp} />
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: mobile ? "flex-start" : "center", justifyContent: "center", gap: 4 }}>
-                      <div style={{ fontWeight: 900, fontSize: 14, color: GREEN }}>+{fmt(Number(addon.unit_price) * Number(addon.qty) * (visits || 1))}</div>
-                      <button onClick={() => removeAddon(idx)} style={{ background: "none", border: "none", color: "#e74c3c", cursor: "pointer", fontSize: 18 }}>×</button>
+                    {/* Fields */}
+                    <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "3fr 120px 120px 130px 100px", gap: 10, padding: "12px 14px", alignItems: "end" }}>
+                      <div>
+                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Add-on Item</div>
+                        <select value={addon.addon_id} onChange={e => updateAddon(idx, "addon_id", e.target.value)} style={S.inp}>
+                          <option value="">Select add-on…</option>
+                          {catAddons.map(ca => <option key={ca.id} value={ca.id}>{ca.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Type</div>
+                        <div style={{ border: `1.5px solid ${BORDER}`, borderRadius: 9, padding: "11px 10px", fontSize: 12, color: MUTED, background: WHITE, minHeight: 44 }}>{addon.unit_type || "—"}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Qty</div>
+                        <input type="number" min={1} value={addon.qty} onChange={e => updateAddon(idx, "qty", e.target.value)} style={S.inp} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Unit Price ($)</div>
+                        <input type="number" min={0} step={0.01} value={addon.unit_price} onChange={e => updateAddon(idx, "unit_price", e.target.value)} style={S.inp} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 4 }}>Amount</div>
+                        <div style={{ background: WHITE, border: `1.5px solid ${GREEN}44`, borderRadius: 9, padding: "11px 10px", fontWeight: 900, fontSize: 14, color: GREEN, textAlign: "center" }}>+{fmt(Number(addon.unit_price) * Number(addon.qty) * (visits || 1))}</div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -589,6 +598,36 @@ function BookingApp({ user, categories, onComplete }) {
           {step === 3 && (
             <div style={S.panel(mobile)}>
               <div style={S.secTitle(mobile)}>Choose Start Date & Time</div>
+
+              {/* Period selector first */}
+              <div style={{ background: LIGHT_BLUE, borderRadius: 12, padding: "16px 20px", marginBottom: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>📅 Service Period</div>
+                <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 6 }}>Service Period</div>
+                    <select value={period} onChange={e => setPeriod(Number(e.target.value))} style={S.inp}>
+                      {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 6 }}>Frequency</div>
+                    <select value={freqId} onChange={e => setFreqId(e.target.value)} style={S.inp}>
+                      <option value="">Select…</option>
+                      {FREQUENCIES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 700, marginBottom: 6 }}>Total Visits</div>
+                    <div style={{ border: `1.5px solid ${BLUE}44`, borderRadius: 9, padding: "11px 14px", background: WHITE, fontWeight: 900, fontSize: 20, color: BLUE, textAlign: "center" }}>
+                      {visits > 0 ? visits : "—"}
+                      {visits > 0 && <div style={{ fontSize: 10, color: MUTED, fontWeight: 500 }}>visits</div>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Date picker */}
+              <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>📅 Start Date</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: mobile ? 4 : 6, marginBottom: 20 }}>
                 {DAYS.map(d => <div key={d} style={{ textAlign: "center", fontSize: 10, color: MUTED, fontWeight: 800, padding: "3px 0" }}>{d}</div>)}
                 {dates.map((d, i) => { const a = date && d.toDateString() === date.toDateString(); const past = d < today && d.toDateString() !== today.toDateString(); return (
@@ -598,11 +637,25 @@ function BookingApp({ user, categories, onComplete }) {
                   </div>
                 );})}
               </div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>Preferred Start Time</div>
+
+              {/* Time picker */}
+              <div style={{ fontSize: 11, fontWeight: 800, color: MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>🕐 Start Time</div>
               <div style={{ display: "grid", gridTemplateColumns: mobile ? "repeat(3,1fr)" : "repeat(auto-fill,minmax(100px,1fr))", gap: mobile ? 8 : 10 }}>
                 {TIME_SLOTS.map(t => { const a = time === t; return <div key={t} onClick={() => setTime(t)} style={{ border: `2px solid ${a ? BLUE : BORDER}`, borderRadius: 10, padding: mobile ? "11px 6px" : 12, textAlign: "center", cursor: "pointer", background: a ? BLUE : WHITE, color: a ? WHITE : MUTED, fontWeight: a ? 800 : 500, fontSize: mobile ? 12 : 13 }}>{t}</div>; })}
               </div>
-              {date && <div style={{ marginTop: 16, background: LIGHT_GREEN, border: `1px solid ${GREEN}44`, borderRadius: 10, padding: "12px 14px", color: GREEN, fontSize: 13, fontWeight: 700 }}>✅ Starting {date.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} at {time}</div>}
+
+              {/* Confirmation */}
+              {date && (
+                <div style={{ marginTop: 16, background: LIGHT_GREEN, border: `1px solid ${GREEN}44`, borderRadius: 12, padding: "14px 18px" }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: GREEN, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>✅ Schedule Confirmed</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13 }}>
+                    <div><span style={{ color: MUTED }}>Start Date: </span><strong>{date.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "long", year: "numeric" })}</strong></div>
+                    <div><span style={{ color: MUTED }}>Time: </span><strong>{time}</strong></div>
+                    <div><span style={{ color: MUTED }}>Period: </span><strong>{period} month{period > 1 ? "s" : ""}</strong></div>
+                    <div><span style={{ color: MUTED }}>Total Visits: </span><strong style={{ color: BLUE, fontSize: 15 }}>{visits} visits</strong></div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
