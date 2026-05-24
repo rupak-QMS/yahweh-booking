@@ -1023,6 +1023,21 @@ function LoginScreen({ onLogin, onAdmin, onGuest }) {
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
 
+  // ── Catch Supabase email link redirects and forward to /set-password ──
+  useEffect(() => {
+    const hash = window.location.hash;
+    const params = new URLSearchParams(window.location.search);
+    if (
+      hash.includes("access_token") ||
+      hash.includes("type=recovery") ||
+      params.get("code") ||
+      params.get("type") === "recovery" ||
+      params.get("type") === "signup"
+    ) {
+      window.location.href = "/set-password" + window.location.search + window.location.hash;
+    }
+  }, []);
+
   async function tryLogin() {
     setLoading(true); setErr("");
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });

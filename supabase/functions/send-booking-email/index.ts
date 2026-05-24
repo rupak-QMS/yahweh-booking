@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
     let setupLink = null;
     if (booking.clientEmail && booking.isNewAccount) {
       try {
-        // Generate a recovery/password-reset link so user can set their password
         const linkRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
           method: "POST",
           headers: {
@@ -43,7 +42,9 @@ Deno.serve(async (req) => {
         });
         const linkData = await linkRes.json();
         console.log("Link generation response:", JSON.stringify(linkData));
-        setupLink = linkData?.action_link || null;
+        // The action_link is nested in properties
+        setupLink = linkData?.properties?.action_link || linkData?.action_link || null;
+        console.log("Setup link:", setupLink);
       } catch (e) {
         console.warn("Could not generate setup link:", e);
       }
