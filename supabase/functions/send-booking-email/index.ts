@@ -1,6 +1,6 @@
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SUPABASE_SERVICE_KEY = Deno.env.get("SERVICE_ROLE_KEY")!;
 const FROM_EMAIL = "bookings@yahwehpc.com.au";
 const ADMIN_EMAILS = ["alex@yahwehpc.com.au", "ron.web108@gmail.com"];
 const APP_URL = "https://yahweh-booking.vercel.app";
@@ -25,14 +25,7 @@ Deno.serve(async (req) => {
     let setupLink = null;
     if (booking.clientEmail && booking.isNewAccount) {
       try {
-        const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-            "apikey": SUPABASE_SERVICE_KEY,
-          },
-        });
-        // Generate a magic link for the user to set their password
+        // Generate a recovery/password-reset link so user can set their password
         const linkRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
           method: "POST",
           headers: {
@@ -41,7 +34,7 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            type: "magiclink",
+            type: "recovery",
             email: booking.clientEmail,
             options: {
               redirect_to: `${APP_URL}/set-password`,
@@ -49,6 +42,7 @@ Deno.serve(async (req) => {
           }),
         });
         const linkData = await linkRes.json();
+        console.log("Link generation response:", JSON.stringify(linkData));
         setupLink = linkData?.action_link || null;
       } catch (e) {
         console.warn("Could not generate setup link:", e);

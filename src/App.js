@@ -959,6 +959,13 @@ function SetPasswordPage({ onDone }) {
     setLoading(true); setErr("");
     const { error } = await supabase.auth.updateUser({ password: pass });
     if (error) { setErr(error.message); setLoading(false); return; }
+    // Get session and save user to sessionStorage so /client works
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const { data: clientData } = await supabase.from("clients").select("*").eq("email", session.user.email).single();
+      const u = { id: session.user.id, name: clientData?.full_name || session.user.email, email: session.user.email, phone: clientData?.phone || "" };
+      sessionStorage.setItem("user", JSON.stringify(u));
+    }
     setDone(true);
     setTimeout(() => { if (onDone) onDone(); window.location.href = "/client"; }, 2000);
   }
